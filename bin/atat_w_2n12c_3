@@ -1,0 +1,6 @@
+#!/bin/bash
+
+Machine=w_2n12c_3
+
+export RUNSTRUCT_TORQUE=/opt/atat_3.04/torque/pbs_${Machine}.sh
+pollmach -m $HOME/.machines/${Machine}.rc /opt/atat_3.04/torque/runstruct_torque.sh

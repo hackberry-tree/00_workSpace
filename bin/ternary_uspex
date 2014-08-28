@@ -1,0 +1,64 @@
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+"""from test_uspex.py"""
+import os
+import sys
+import numpy as np
+import pylab
+import mpl_toolkits #pylint: disable=F0401
+import uspex
+from convex_hull import FindGS, PlotTriangularCoord
+import convex_hull
+
+
+Axes3D = mpl_toolkits.mplot3d.Axes3D #pylint: disable=C0103
+
+def main():
+    """main()"""
+    if len(sys.argv) == 1:
+    print("plot only meta-stable phase.")
+        Auxiliary.ternary('.', 'metastable')
+    elif sys.argv[1] == '-a':
+    print("plot all phase (include unstable phase)")
+    Auxiliary.ternary('.', 'all')
+
+class Auxiliary(object): #pylint: disable=R0903
+    """
+    uspex
+    """
+    @staticmethod
+    def ternary(path, dataset='metastable'): #pylint: disable=C0103
+    out = uspex.Output(os.path.join('OUTPUT.txt'))
+        elements = out.elements
+    print('[base0, base1, base2] = {0}'.format(elements))
+        aux = uspex.Auxiliary.from_file(path)
+        aux.ternary()
+        initial_base, not_bases, meta_stables = aux.separate_bases()
+        bases = FindGS.collect_base_triangles(initial_base, not_bases)
+        tmp = [y for x in bases for y in x]
+        np_bases = np.array(tmp) #pylint: disable=E1101
+        if dataset == 'metastable':
+            all_data = np.array(initial_base + meta_stables) #pylint: disable=E1101
+    elif dataset == 'all':
+        all_data = np.array(initial_base + not_bases) #pylint: disable=E1101
+        #print('num of metastable structures {0}'.format(len(meta_stables))a)
+        fig = pylab.figure()
+        ax = Axes3D(fig) #pylint: disable=C0103
+        plt3d = PlotTriangularCoord(ax)
+        plt3d.plt_triangle_dot(all_data, edgecolor='orange', facecolor='pink', s=15)
+        plt3d.outline_base_plot(bases)
+        plt3d.plt_triangle_dot(np_bases, edgecolor='blue', facecolor='blue', s=40)
+    min_z = round((min(all_data[:,2]))/10) * 10
+        min_z -= 10
+    max_z = round((max(all_data[:,2]))/10) * 10
+    max_z += 10
+    zlim = [min_z, 0]
+    plt3d.make_flame(elements, zlim)
+
+    print('minimum line correspond {0} kJ/mol'.format(min_z))
+        pylab.show()
+
+if __name__ == '__main__':
+    main()
+
+

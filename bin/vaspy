@@ -1,0 +1,146 @@
+#!/opt/anaconda/bin/python
+# -*- coding: utf-8 -*-
+import sys
+import re
+import os
+from commopy import Cabinet, TrialRun, Bash
+from cifpy import Cif2Cell
+import vaspy
+
+
+def main():
+    dirc = '.'
+    selectRun(dirc)
+
+
+def execute_cif2cellAuto(dirc):
+    out_dir = dirc
+    Cif = Cif2Cell(dirc)
+    Cif.prep_all(out_dir)
+    for dirc in Cif.new_member:
+        abspath = os.path.join(out_dir, dirc)
+        print(abspath)
+        vaspy.MakeInputs.all(abspath)
+
+
+def testRun():
+    dirc = '/Users/enoki/Documents/01_ResearchData/Calculations/99_python/'
+    dirc2 = '01_testRun/prepVaspInputs/cif2cell'
+    execute_cif2cellAuto(os.path.join(dirc, dirc2))
+
+    dirc2 = '01_testRun/prepVaspInputs/prepInputs'
+    incar = vaspy.IncarReadPoscar('')
+    vaspy.MakeInputs.all(os.path.join(dirc, dirc2), incar)
+
+    dirc2 = '01_testRun/prepVaspInputs/convIncSOC'
+    execute_ConvIncarSoc(os.path.join(dirc, dirc2))
+
+
+def selectRun(dirc):
+    if len(sys.argv) == 1:
+        TrialRun.is_workspace(dirc, testRun)
+        vaspy.MakeInputs.all(dirc)
+    else:
+        if sys.argv[1] == '-soc':
+            execute_ConvIncarSoc(dirc)
+
+        if sys.argv[1] == '-cif':
+            execute_cif2cellAuto(dirc)
+
+
+def execute_ConvIncarSoc(dirc):
+    Conv = ConvIncarSoc(dirc, 'OUTCAR_ibzkp')
+    Conv.convert_all(dirc)
+
+
+class ConvIncarSoc(vaspy.IncarReadWriteMixin):
+    """
+    ibzkp計算(予備)結果からNBANDS, NGX, NGY, NGZを読み取って、
+    適切な値をpresoc, socのINCARに設定する
+    """
+    cls_fixed_tag = {}
+
+    def __init__(self, path='.', fname='OUTCAR_ibzkp'):
+        """
+        vaspy.IncarTrunkのincar_out_listに対してnbands, ng(xyz)を
+        追加したもを初期値に設定
+        """
+        self.fixed_tag = {}
+        self.incar_out_list = ['system', 's',
+                               'npar', 'prec', 'encut', 's',
+                               'ispin', 'magmom', 'lsorbit', 'saxis', 's',
+                               'gga_compat', 'lmaxmix', 'isym', 's',
+                               'nelm', 'nelmin', 'ediff',
+                               'ismear', 'sigma', 's',
+                               'ibrion', 'nsw', 'isif', 'ediffg', 's',
+                               'istart', 'icharg', 'lwave', 'lcharg',
+                               'lorbit', 's',
+                               'rwigs']
+        self.incar_out_list += ['s', 'nbands', 'ngx', 'ngy', 'ngz']
+        fname = os.path.join(path, fname)
+        self.additional_tags = self.read_outcar(fname)
+        self.incar_dict = {}
+
+    def convert_all(self, dst_path):
+        """
+        det_path中の5種のINCARファイルを修正し上書きする
+        追加したパラメータを出力
+        """
+        incar_list = Bash.find_files('INCAR_*soc*')
+        for incar in incar_list:
+            self.convert_incar(dst_path, incar)
+        self.note_update()
+
+    def read_outcar(self, fname='OUTCAR_ibzkp'):
+        """
+        Read NGX, NGY, NGZ, NBANDS parameters from OUTCAR.
+        """
+        lines = Cabinet.read_file(fname)
+        ngx_key = re.compile(r".*WARNING:.*NGX\s*to\s*(\d+)*")
+        ngy_key = re.compile(r".*WARNING:.*NGY\s*to\s*(\d+)*")
+        ngz_key = re.compile(r".*WARNING:.*NGZ\s*to\s*(\d+)*")
+        nbands_key = re.compile(r".*NBANDS\s*=\s*(\d+)*")
+        ngx_value = None
+        ngy_value = None
+        ngz_value = None
+        for i in range(0, len(lines)):
+            ngx_meta = ngx_key.match(lines[i])
+            ngy_meta = ngy_key.match(lines[i])
+            ngz_meta = ngz_key.match(lines[i])
+            nbands_meta = nbands_key.match(lines[i])
+            if ngx_meta:
+                ngx_value = int(ngx_meta.group(1))
+            elif ngy_meta:
+                ngy_value = int(ngy_meta.group(1))
+            elif ngz_meta:
+                ngz_value = int(ngz_meta.group(1))
+            elif nbands_meta:
+                nbands_value = int(nbands_meta.group(1))
+                nbands_value += nbands_value % 2  # alt to even
+        return {'ngx': ngx_value, 'ngy': ngy_value, 'ngz': ngz_value,
+                'nbands': nbands_value}
+
+    def convert_incar(self, path, incar):
+        """
+        self.read_outcar()から読み取ったパラメータに基づいて
+        path/incarを修正し上書き
+        """
+        self.incar_dict = self.read_incar(os.path.join(path, incar))
+        self.incar_dict.update(self.additional_tags)
+        if self.incar_dict['lsorbit'] != True:
+            self.incar_dict['nbands'] /= 2
+        incar_file = os.path.join(path, incar)
+        self.write_incar(incar_file)
+
+    def note_update(self):
+        """
+        追加したパラメータを出力
+        """
+        note_para = ['ngx', 'ngy', 'ngz', 'nbands']
+        line = ''
+        for key in note_para:
+            line += self.make_incform(key)
+        print(line)
+
+if __name__ == '__main__':
+    main()

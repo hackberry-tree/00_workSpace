@@ -1,0 +1,83 @@
+#!/usr/bin/python
+# -*- coding: utf-8 -*-
+"""test"""
+import os
+import pylab
+import shutil
+import unittest
+import sprkkr
+import glob
+from commopy import Bash
+import numpy as np
+from mpl_toolkits.mplot3d import Axes3D
+
+
+
+TEST_PATH = ("/Users/enoki/Documents/01_ResearchData/Calculations/"
+             "99_python/01_testRun/")
+
+def main():
+    unittest.main()
+
+
+class testCorrectResults(unittest.TestCase):
+    path = os.path.join(TEST_PATH, 'sprkkr', 'FeCo_MAE_map')
+
+    def test_get_data(self):
+        path_list = glob.glob(os.path.join(self.path, '*', '001', '*'))
+        test = sprkkr.CorrectResults(path_list, '*.pot', 'OUTPUT.out')
+        test.list_no_converged()
+        test.set_mae(['001', '100'])
+        test.output = ["occ", "c/a", "energy", "mae"]
+        test.print_table()
+
+        fig = pylab.figure()
+        ax = Axes3D(fig)
+        test.remove_none('mae')
+        x = test["occ"]
+        y = test["c/a"]
+        z = test["mae"]
+        ax.scatter3D(np.ravel(x), np.ravel(y), np.ravel(z))
+        pylab.show()
+
+
+
+class TestOUTPUT(unittest.TestCase):
+    path = os.path.join(TEST_PATH, 'sprkkr', 'single_data')
+
+    def test_get_energy(self):
+        test = sprkkr.Output(os.path.join(self.path, 'Output.out'))
+        print(test.data)
+
+class TestPot(unittest.TestCase):
+    path = glob.glob(os.path.join(TEST_PATH, 'sprkkr', 'single_data', '*.pot'))
+
+    def test_get_energy(self):
+        test = sprkkr.Pot(self.path[0])
+        print(test.data)
+
+
+def clean_prev(path, files):
+    """
+    既存filesを消去
+    """
+    trush_list = Bash.find_files(path, files)
+    for trush in trush_list:
+        fname = os.path.join(path, trush)
+        os.remove(fname)
+        print("{0} is removed.".format(fname))
+
+
+def clean_prev_dir(path, dirc):
+    """
+    既存dirctoryを消去
+    """
+    trush_list = Bash.find_files(path, dirc)
+    for trush in trush_list:
+        fname = os.path.join(path, trush)
+        shutil.rmtree(fname)
+        print("{0} is removed.".format(fname))
+
+
+if __name__ == '__main__':
+    main()

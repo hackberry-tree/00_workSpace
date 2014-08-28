@@ -1,0 +1,14 @@
+#---------------------------------- 0 ----------------------------------
+#  now # can be used as comment lines as well
+#--------------------------------------------
+go  data/pot  _Brv_  _Latt_,_CovA_,_BovA,_alpha_,_beta_,_gamma_,
+_Edelt_  _Ewidth_  _Rel_  _Exc_  _Mag_  _Record_
+_Outtyp_  _Kp_  _Maxitr_  _Pmix_
+  _nelem_
+#--------------------------------------------
+#  name of type, number of components, rtr,  
+#  field, lmax, atomic number, concentration 
+#--------------------------------------------
+_ElemetnsList_
+  _sites_
+_SitesList_

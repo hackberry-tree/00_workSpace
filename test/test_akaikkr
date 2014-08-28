@@ -1,0 +1,78 @@
+#!/usr/bin/python
+# -*- coding: utf-8 -*-
+"""test"""
+import os
+import glob
+import pylab
+import shutil
+import unittest
+import grapy
+import collect_akaikkr
+from commopy import DataBox
+
+
+def main():
+    """main"""
+    unittest.main()
+
+TEST_PATH = ('/Users/enoki/Documents/01_ResearchData/Calculations/'
+             '99_python/01_testRun/')
+
+class Energy(unittest.TestCase): #pylint: disable=R0904
+    """data収集"""
+    path = os.path.join(TEST_PATH, 'akaikkr')
+
+    def test_single_data(self):
+        """single_data"""
+        path = os.path.join(self.path, 'single_data', 'output')
+        akai = collect_akaikkr.Energy.get_data_single(path)
+        print(akai)
+
+    def test_series_data(self):
+        """series_data"""
+        path = os.path.join(self.path, 'series_data')
+        path_list = glob.glob(os.path.join(path, 'Conc_*', 'latt_*', '*/output'))
+        akai = collect_akaikkr.Energy(path_list)
+        compo = akai['compo']
+        conc = [x[1]['compositions'][0]['concentration'] for x in compo]
+        akai['conc'] = conc
+        akai.output_keys = ['conc', 'latt_a', 'energy']
+        akai.data.sort(key=lambda x: x['conc'])
+        perconc = akai.separate_data('conc')
+        print(perconc[0])
+        for data in perconc:
+            data['energy'] = data['energy'] - data['energy'][3]
+        plt = grapy.Vertical(1)
+        self.plot(plt, perconc, 'latt_a', 'energy')
+#        plt.set_style(0*10+5, label=['test'])
+#        plt.set123(perconc[2], 'latt_a', 'energy')
+
+    def plot(self, plt, table, x, *y):
+        for i in range(0, 11):
+            plt.set_style(i*3, label=['test'])
+            plt.set123(table[i], x, *y)
+        plt.adjust_auto()
+        plt.plot('show')
+
+
+def clean_prev(path, files):
+    """
+    filesを消去
+    """
+    trush_list = glob.glob(os.path.join(path, files))
+    for trush in trush_list:
+        fname = os.path.join(path, trush)
+        os.remove(fname)
+        print("{0} is removed.".format(fname))
+
+def clean_prev_dir(path, dirc):
+    """
+    dirctoryを消去
+    """
+    trush_list = glob.glob(os.path.join(path, dirc))
+    for trush in trush_list:
+        shutil.rmtree(trush)
+        print("{0} is removed.".format(trush))
+
+if __name__ == '__main__':
+    main()
