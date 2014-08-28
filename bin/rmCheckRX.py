@@ -19,7 +19,7 @@ def touch_errors():
     checkrelax = Popen('checkrelax', stdout=PIPE).communicate()[0]
     distortion = [float(x.split()[0])
                   for x in checkrelax.split('\n')[:-1]]
-    print(distortion)
+
     # checkrelaxの値が0.1以上になる行を判定
     threshold = 0
     while distortion[threshold] <= 0.1:
@@ -29,6 +29,9 @@ def touch_errors():
     with open('listDistorted.txt', 'w') as wfile:
         wfile.write(distorted)
 
+    print('{0} of {1} structures have too large distoion.'
+          .format(len(distortion), len(distortion[threshold:])))
+    print('{0} structures are O.K.'.format(threshold))
     distorted_path = [x.split()[1].split('/')[0]
                       for x in distorted_list]
     for path in distorted_path:
