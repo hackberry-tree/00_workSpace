@@ -1,20 +1,39 @@
 #!/opt/anaconda/bin/python
 # -*- coding: utf-8 -*-
 """
-mae計算
+VASPのデータを収集してprint
 """
-import collect_vasp
-import glob
 import os
+import glob
+import argparse
+import collect_vasp
 
 def main():
-    """main"""
-    dir_list = glob.glob("EA*/OSZICAR")
-    dir_list = [os.path.dirname(x) for x in dir_list]
-    print_data(dir_list)
+    """
+    use argparse
+    """
+    parser = argparse.ArgumentParser(description='print series of data')
+    parser.add_argument('strings', metavar='P', type=str, nargs='+',
+                        help='enter path')
+    parser.add_argument('--feb', dest='run', const=for_uspex_FeB_print_data,
+                        action='store_const', default=print_data)
+    #parser.add_argument('--def', dest='run', const=print_data)
+    args = parser.parse_args()
+    print(args.strings)
+    args.run(args.strings[0])
 
 
-def print_data(dir_list):
+def print_data(path):
+    """
+    入力のpathはワイルドカードを使用可能
+    os.path.dirnameを修得するのでoutputファイルまで入れて検索させること
+    """
+    dir_list = [os.path.dirname(x) for x in glob.glob(path)]
+    data = collect_vasp.Energy(dir_list, 'POSCAR', 'OSZICAR')
+    #data.set_enthalpy()
+    print(data)
+
+def for_uspex_FeB_print_data():
     os.chdir('results1_POSCARS_FeB')
     dir_list = glob.glob("EA*/OSZICAR")
     dir_list = [os.path.dirname(x) for x in dir_list]

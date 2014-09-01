@@ -215,7 +215,7 @@ class Produce(Series, PoscarMixin, IncarMixin, KpointsMixin):
         """
         lines = ""
         for param in self.series:
-            path = param['path']
+            path = os.path.abspath(param['path'])
             run_file = os.path.abspath(run_file)
             lines += "{0}    {1}\n".format(path, run_file)
         Cabinet.append_file('list_run', lines)

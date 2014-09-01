@@ -577,7 +577,8 @@ class MakeInputs(object):
         if not incar_obj:
             incar_obj = IncarReadPoscar(os.path.join(path, 'POSCAR'))
         cls.make_potcar_kpoints(path, kp_rx, kp_soc)
-        methods = ['relax', 'cell', 'volume', 'volumeE', 'presoc', 'presoc_nc',
+        methods = ['relax', 'cell', 'ion', 'volume', 'volumeE',
+                   'presoc', 'presoc_nc',
                    'ibzkp', 'soc',
                    'dos', 'band', 'static']
         for method in methods:
@@ -588,7 +589,7 @@ class MakeInputs(object):
 
     @staticmethod
     def relax(path, base):
-        """For cell optimize calculation"""
+        """volume, ion, cell shapes relaxation"""
         incar = copy.deepcopy(base)
         incar.switch_relax_stracture(relax_sw=True, isif=3)
         incar.switch_istart_lwave(read_sw=False, write_sw=False)
@@ -597,13 +598,24 @@ class MakeInputs(object):
 
     @staticmethod
     def cell(path, base):
-        """For cell optimize calculation"""
+        """ion & cell shapes relaxation"""
         incar = copy.deepcopy(base)
         incar.switch_relax_stracture(relax_sw=True, isif=4)
         incar['encut'] /= 1.3
         incar['isym'] = 0
         incar.switch_istart_lwave(read_sw=False, write_sw=False)
         fname = os.path.join(path, 'INCAR_cell')
+        incar.write_incar(fname)
+
+    @staticmethod
+    def ion(path, base):
+        """only ion relax"""
+        incar = copy.deepcopy(base)
+        incar.switch_relax_stracture(relax_sw=True, isif=2)
+        incar['encut'] /= 1.3
+        incar['isym'] = 0
+        incar.switch_istart_lwave(read_sw=False, write_sw=False)
+        fname = os.path.join(path, 'INCAR_ion')
         incar.write_incar(fname)
 
     @staticmethod

@@ -5,6 +5,7 @@ atat/checkrelaxの結果を受け取って
 歪みが大きい構造(0.1以上)を除外する
 歪みが大きい構造dirにerrorファイルを置く
 """
+import math
 import os
 from subprocess import Popen, PIPE
 
@@ -19,6 +20,8 @@ def touch_errors():
     checkrelax = Popen('checkrelax', stdout=PIPE).communicate()[0]
     distortion = [float(x.split()[0])
                   for x in checkrelax.split('\n')[:-1]]
+    print(distortion.count(float('nan')))
+
 
     # checkrelaxの値が0.1以上になる行を判定
     threshold = 0

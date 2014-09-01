@@ -299,7 +299,7 @@ class Cabinet(object):
             path_dir = os.path.abspath(path)
             run_file = os.path.abspath(run_file)
             lines += "{0}    {1}\n".format(path_dir, run_file)
-        Cabinet.write_file('list_run.txt', lines)
+        Cabinet.write_file('list_run', lines)
 
 
 class TrialRun(object):

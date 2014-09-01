@@ -27,8 +27,8 @@ def test():
     #print(dir(pd))
     #print(pd.get_form_energy_per_atom(list(pd.stable_entries)[0]))
 
-    #plotter = PDPlotter(pd)
-    #plotter.show()
+    plotter = PDPlotter(pd)
+    plotter.show()
 
     #get chmical fomular
     #print(entries[0].data['cif'])  # cif data
@@ -37,9 +37,9 @@ def test():
     #poscar = Poscar(cif_str[1])
     #print(poscar)
 
-    print(entries[0].to_dict['data'])
+    #print(entries[0].to_dict['data'])
     #print_data(entries)
-    print_data2(entries, composition)
+    #print_data2(entries, composition)
 
 def print_data(entries):
     line = "formula\tenthalpy\n"
