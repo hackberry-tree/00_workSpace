@@ -8,7 +8,8 @@ import shutil
 import unittest
 import grapy
 import collect_vasp
-from commopy import Table
+#import vasp_unfold
+from commopy import DataBox
 
 
 def main():
@@ -34,7 +35,17 @@ class Procar(unittest.TestCase): #pylint: disable=R0904
     """PROCAR用"""
     path = os.path.join(TEST_PATH, 'band')
 
-    def est_band_polarized(self):
+    def est_vs_vasp_unfold(self):
+        path = os.path.join(self.path, 'data')
+        band = collect_vasp.Procar(os.path.join(path, 'PROCAR_band'))
+        print(band['kpoint'])
+
+        band2 = vasp_unfold.parse_procar(os.path.join(path, 'PROCAR_band'))
+        print(band2[5][0])
+
+
+
+    def test_band_polarized(self):
         """polarizedのPROCAR用"""
         path = os.path.join(self.path, 'data')
 
@@ -65,7 +76,7 @@ class Procar(unittest.TestCase): #pylint: disable=R0904
 
         ax1.scatter(band['kpoint_id'], band['energy'], s=1, c='gray',
                     linewidths=0)
-        orbitals = Table(band['orbitals_tot'])
+        orbitals = DataBox(band['orbitals_tot'])
         size = [float(x) * 10 for x in orbitals['dxy']]
         ax1.scatter(band['kpoint_id'], band['energy'], s=size, c='g',
                     linewidths=0)
@@ -75,10 +86,10 @@ class Procar(unittest.TestCase): #pylint: disable=R0904
         ax1.set_ylim(-5, 5)
         ax1.set_xlim(0, band['kpoint_id'][-1])
         pylab.xticks(kp_label[0], kp_label[1])
-        #plt.plot('show')
-        pylab.savefig(os.path.join(path, 'band.eps'))
+        pylab.show()
+        #pylab.savefig(os.path.join(path, 'band.eps'))
 
-    def test_band_soc(self):
+    def est_band_soc(self):
         """soc用のband"""
         path = os.path.join(self.path, 'data_soc')
         dos_001 = collect_vasp.Doscar(os.path.join(path, 'dos_001'))
@@ -110,7 +121,7 @@ class Procar(unittest.TestCase): #pylint: disable=R0904
             pylab.axvline(x=i, ls=':', color='gray')
         pylab.axhline(y=0.03, ls=':', color='gray')
 
-        orbitals = Table(band_001['orbitals_tot'])
+        orbitals = DataBox(band_001['orbitals_tot'])
         mark_size = [float(x) * 10 for x in orbitals['dxy']]
         ax1.scatter(band_001['kpoint_id'], band_001['energy'], s=mark_size,
                     c='g', linewidths=0)
@@ -123,7 +134,7 @@ class Procar(unittest.TestCase): #pylint: disable=R0904
         band_100.set_spin_direction()
         band_100.data = band_100.trim_data(band_100['spin'], 'down')
         band_100['energy'] = band_100['energy'] - ef_100
-        orbitals = Table(band_100['orbitals_tot'])
+        orbitals = DataBox(band_100['orbitals_tot'])
         mark_size = [float(x) * 10 for x in orbitals['dxy']]
         ax1.scatter(band_100['kpoint_id'], band_100['energy'], s=mark_size,
                     c='r', linewidths=0)
@@ -136,7 +147,7 @@ class Procar(unittest.TestCase): #pylint: disable=R0904
         pylab.xticks(kp_label[0], kp_label[1])
         pylab.show()
 
-    def test_band_sum(self):
+    def est_band_sum(self):
         """ef以下のbandのenergyのsumを取る"""
         path = os.path.join(self.path, 'data_soc')
         dos_001 = collect_vasp.Doscar(os.path.join(path, 'dos_001'))
@@ -162,7 +173,7 @@ class Procar(unittest.TestCase): #pylint: disable=R0904
         sum_e001['dif'] = sum_e100['Sum_E'] - sum_e001['Sum_E']
 
         plt = grapy.Vertical(1)
-        #orbitals = Table(band_001['orbitals_tot'])
+        #orbitals = DataBox(band_001['orbitals_tot'])
         #mark_size = [float(x) * 10 for x in orbitals['dxy']]
         plt.ax1.scatter(sum_e001['kpoint_id'], sum_e001['dif'], s=5,
                         c='g', linewidths=0)

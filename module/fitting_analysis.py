@@ -86,13 +86,13 @@ class FitData(object):
         誤差(func)を最小化する
         """
         xfit, xcov, infodict, errmsg, success = \
-            scipy.optimize.leastsq(func, x0, args, full_output=1) #pylint: disable=E1101
-        if xcov.size:
-            s_sq = (func(xfit, *args) ** 2).sum() / len(args[0])
+            scipy.optimize.leastsq(func, x0, args, full_output=1)
+        s_sq = (func(xfit, *args) ** 2).sum() / len(args[0])
+        try:
             xcov *= s_sq
-        #pylint: disable=E1101
-        error = [numpy.absolute(xcov[i][i])**0.5 for i in range(0, len(x0))]
-        #pylint: disable=E1101
+            error = [numpy.absolute(xcov[i][i])**0.5 for i in range(len(x0))]
+        except TypeError:
+            error = [0 for i in range(len(x0))]
         return xfit, numpy.array(error)
 
 

@@ -315,7 +315,8 @@ class MakePattern(object):  # self.compos{'composition':(X,Y)}
             dst_list = [x + [y] for x in dst_list for y in src_list]
         return dst_list
 
-    def nCr(self, n, r):
+    @staticmethod
+    def nCr(n, r):
         """
         1-nまでの整数から、r個の要素を取り出す場合の全ての組み合わせを出力する
         """
@@ -330,9 +331,13 @@ class MakePattern(object):  # self.compos{'composition':(X,Y)}
             out_list = copy.deepcopy(tmp_list)
         return out_list
 
-    def nCrList(self, in_list, r):
+    @classmethod
+    def nCrList(cls, in_list, r):
+        """
+        listの中からr個選ぶ全ての組み合わせをreturn
+        """
         n = len(in_list)
-        index_list = self.nCr(n, r)
+        index_list = cls.nCr(n, r)
         out_list = []
         for index in index_list:
             tmp_list = []

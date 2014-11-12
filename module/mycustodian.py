@@ -3,6 +3,7 @@
 """
 自分用に修正
 """
+# pylint: disable=unexpected-keyword-arg, no-value-for-parameter
 from custodian.vasp.handlers import VaspErrorHandler
 from custodian.utils import backup
 from pymatgen.io.vaspio.vasp_input import VaspInput

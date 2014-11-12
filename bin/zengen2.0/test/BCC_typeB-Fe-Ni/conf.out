@@ -1,0 +1,16 @@
+1     Fe  Fe  Fe  Fe  1.000  0.000  
+2     Ni  Ni  Ni  Ni  0.000  1.000  
+3     Ni  Fe  Fe  Fe  0.750  0.250  
+4     Fe  Ni  Fe  Fe  0.750  0.250  
+5     Fe  Fe  Ni  Fe  0.750  0.250  
+6     Fe  Fe  Fe  Ni  0.750  0.250  
+7     Ni  Ni  Fe  Fe  0.500  0.500  
+8     Ni  Fe  Ni  Fe  0.500  0.500  
+9     Ni  Fe  Fe  Ni  0.500  0.500  
+10    Fe  Ni  Ni  Fe  0.500  0.500  
+11    Fe  Ni  Fe  Ni  0.500  0.500  
+12    Fe  Fe  Ni  Ni  0.500  0.500  
+13    Ni  Ni  Ni  Fe  0.250  0.750  
+14    Ni  Ni  Fe  Ni  0.250  0.750  
+15    Ni  Fe  Ni  Ni  0.250  0.750  
+16    Fe  Ni  Ni  Ni  0.250  0.750  

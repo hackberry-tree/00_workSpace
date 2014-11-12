@@ -2,10 +2,16 @@
 	"folders":
 	[
 		{
-			"path": "/Users/enoki/Documents/01_ResearchData/Calculations/99_python/00_workSpace/"
+			"follow_symlinks": true,
+			"path": "."
 		},
 		{
+			"follow_symlinks": true,
 			"path": "/Users/enoki/Documents/01_ResearchData/Calculations/99_python/01_testRun"
+		},
+		{
+			"follow_symlinks": true,
+			"path": "/Users/enoki/Documents/01_ResearchData/Calculations/99_python/02_checkio"
 		}
 	],
 	"settings":

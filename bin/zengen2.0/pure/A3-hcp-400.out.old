@@ -1,0 +1,4 @@
+v5-PBE-400ev |  elts struc # energy-per-atom # cell-parameters (a,b,c, vol) # MAG
+ A3 Ni : -5.5463695 eV                                               # mag
+ A3 Mo : -10.505542 eV                                               #nonmag
+ A3 Re : -12.4224915 eV ( 2.774318174 2.402630018 4.479895402 14.93 ) # no-mag

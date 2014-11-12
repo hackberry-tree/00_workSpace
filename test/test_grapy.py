@@ -6,6 +6,7 @@ energy, c/a, mag, volumeなどの情報を読んでdata_arrayを作成する
 import os
 import glob
 import pylab
+import numpy as np
 import shutil
 import unittest
 import grapy
@@ -46,15 +47,21 @@ class Grapy(unittest.TestCase):
 
             all_dir_list = glob.glob(os.path.join(in_dir1, formula, 'fixed_*'))
             regular = collect_vasp.Energy(all_dir_list, 'POSCAR', 'OSZICAR')
-            regular.data['c/a'] /= 2 ** 0.5
-            regular.get_enthalpy(total_elem, total_num_atoms)
-            regular.get_mae('OSZICAR_SOC001', 'OSZICAR_SOC100', 'mae')
+            regular['c/a'] /= 2 ** 0.5
+
+            fixed_elem = [total_elem[1], total_elem[0], total_elem[2]]
+            fixed_elem = np.array([fixed_elem] * len(regular['elements']))
+
+            regular['elements'] = fixed_elem
+            regular.set_enthalpy()
+            regular.set_mae('OSZICAR_SOC001', 'OSZICAR_SOC100')
 
             all_dir_list = glob.glob(os.path.join(in_dir2, formula, 'fixed_*'))
             inverse = collect_vasp.Energy(all_dir_list, 'POSCAR', 'OSZICAR')
-            inverse.data['c/a'] /= 2 ** 0.5
-            inverse.get_enthalpy(total_elem, total_num_atoms)
-            inverse.get_mae('OSZICAR_SOC001', 'OSZICAR_SOC100', 'mae')
+            inverse['c/a'] /= 2 ** 0.5
+            inverse['elements'] = fixed_elem
+            inverse.set_enthalpy()
+            inverse.set_mae('OSZICAR_SOC001', 'OSZICAR_SOC100')
 
             rlines = [str(regular)]
             ilines = [str(inverse)]
@@ -69,9 +76,9 @@ class Grapy(unittest.TestCase):
                 plt.set_title("Heusler Fe$_2${0[0]}{0[1]}"
                                 .format(composition['elements']))
                 plt.set_style('blue')
-                plt.set123(regular.data, 'c/a', 'enthalpy', 'mag', 'mae')
+                plt.set123(regular, 'c/a', 'enthalpy', 'mag', 'mae')
                 plt.set_style('magenta')
-                plt.set123(inverse.data, 'c/a', 'enthalpy', 'mag', 'mae')
+                plt.set123(inverse, 'c/a', 'enthalpy', 'mag', 'mae')
 
                 plt.adjust_auto()
                 plt.ax2.set_ylim(-0.5, 3)

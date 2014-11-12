@@ -1,0 +1,16 @@
+1     Ni  Ni  Ni  Ni  1.000  0.000  
+2     C   C   C   C   0.000  1.000  
+3     C   Ni  Ni  Ni  0.750  0.250  
+4     Ni  C   Ni  Ni  0.750  0.250  
+5     Ni  Ni  C   Ni  0.750  0.250  
+6     Ni  Ni  Ni  C   0.750  0.250  
+7     C   C   Ni  Ni  0.500  0.500  
+8     C   Ni  C   Ni  0.500  0.500  
+9     C   Ni  Ni  C   0.500  0.500  
+10    Ni  C   C   Ni  0.500  0.500  
+11    Ni  C   Ni  C   0.500  0.500  
+12    Ni  Ni  C   C   0.500  0.500  
+13    C   C   C   Ni  0.250  0.750  
+14    C   C   Ni  C   0.250  0.750  
+15    C   Ni  C   C   0.250  0.750  
+16    Ni  C   C   C   0.250  0.750  

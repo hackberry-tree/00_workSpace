@@ -20,6 +20,12 @@ def test():
     #This gets all entries belonging to the Ca-C-O system.
     composition = ['Fe', 'Ni', 'Si']
     entries = mpr.get_entries_in_chemsys(composition)
+
+    # entryの内容を確認
+    entry = entries[0]
+    print(entry.as_dict())
+    print(entry.as_dict()['data']['volume']/6)
+
     #With entries, you can do many sophisticated analyses,
     #like creating phase diagrams.
     pd = PhaseDiagram(entries) #pylint: disable=C0103
@@ -28,7 +34,7 @@ def test():
     #print(pd.get_form_energy_per_atom(list(pd.stable_entries)[0]))
 
     plotter = PDPlotter(pd)
-    plotter.show()
+    #plotter.show()
 
     #get chmical fomular
     #print(entries[0].data['cif'])  # cif data

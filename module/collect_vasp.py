@@ -1,14 +1,17 @@
-#!/opt/local/bin/python
+#!/usr/bin/env python
 # -*- coding: utf-8 -*-
 """
 energy, c/a, mag, volumeなどの情報を読んでdata(array)を作成する
 """
 import os
 import re
+import glob
+import pylab
 import numpy as np
 import vaspy
 import solid
 from commopy import Cabinet, Array, DataBox
+from fitting_analysis import FitData
 
 class Procar(DataBox):
     """
@@ -22,11 +25,17 @@ class Procar(DataBox):
                      'dxz': [8, 'red', r"dxz"],
                      'dx2': [9, 'blue', r"dx^{/=7 2}-y^{/=7 2}"]} #  色とラベルを指定
 
-    def __init__(self, procar):
+    def __init__(self, procar, poscar=None):
         """
         self.dataの構成
         'kpoint_id', 'orbitals_phase', 'kpoint', 'energy', 'spin'
         'orbitals_tot', 'occupancy'
+        'dk', 'xaxis'を追加
+        'dk'は前のk点からのk空間上の距離,
+        'xaxis'はそれを積算したものでband描写の横軸に用いる
+        poscarを読み込ませることで逆格子cellの各軸の長さを反映させて,
+        bandの横軸の長さを対応させることができる
+        defaultではposcarは読まずに、a*, b*, c*の長さは全て1
         """
         flow_procar = open(procar)
         line = flow_procar.readline()
@@ -43,8 +52,8 @@ class Procar(DataBox):
         """
         kpoints = [self.data[i]['kpoint']
                    for i in range(0, len(self.data), self.num_bands)]
-        kpoints = np.array(kpoints) #pylint: disable=E1101
-        delta_k = np.sign([kpoints[i+1]-kpoints[i] #pylint: disable=E1101
+        kpoints = np.array(kpoints)
+        delta_k = np.sign([kpoints[i+1]-kpoints[i]
                            for i in range(0, len(kpoints)-1)])
         turn_pt = [0] + [i+1 for i in range(0, len(delta_k)-1)
                          if not (delta_k[i] == delta_k[i+1]).all()]
@@ -416,6 +425,7 @@ class Energy(DataBox):
             print("path_list is empty !!!")
         self.filetype = {'poscar': poscar, 'output': output}
         self.path_list = path_list
+        self.error_path = []
         DataBox.__init__(self, self.get_data())
         #self.data, self.comp = self.get_data()
         #self.trim_bool(self.data, self.data['bool'], 'energy', 'mag')
@@ -627,10 +637,10 @@ class Energy(DataBox):
             out_lines += "\t".join(line) + "\n"
         return out_lines
 
-    def separate_data(self, label, pos=None):
+    def separate_data(self, label, pos):
         """
-        self.dataを分割する
-        分割の判定要素がlistのケース
+        self.dataのself.data[label]が同一の要素毎に分割する
+        分割の判定要素がlist[pos]のケース
         plot用
         """
         tmp_keys = [x[pos] for x in self[label]]
@@ -672,6 +682,71 @@ class Energy(DataBox):
             for elem, i in zip(data['elements'], data['num_atoms']):
                 formula += "{0}$_{1}$".format(elem, i)
             data.update({'formula': formula})
+
+
+class MurnaghanFit(Energy):
+    """
+    voldepを計算した結果をMurnaghan_fitして収集する
+    """
+    def __init__(self, dir_list):
+        Energy.__init__(self, dir_list)
+
+    def get_data(self):
+        """
+        fitting resultからE0, B, B1, volume, それらのfitting誤差を読む
+        """
+        data_box = []
+        for path in self.path_list:
+            print(path)
+            fit_res = self.fit_murnaghan(path)
+            if not fit_res:
+                continue
+            path_posc = os.path.join(path, self.filetype['poscar'])
+            cova, _, _, elements, num_atoms = self.read_posc(path_posc)
+            data_box.append({'c/a': cova, 'elements': elements,
+                             'num_atoms': num_atoms, 'path': path,
+                             'energy': fit_res[0][0], 'errE': fit_res[1][0],
+                             'B': fit_res[0][1], 'errB': fit_res[1][1],
+                             'B1': fit_res[0][2], 'errB1': fit_res[1][2],
+                             'volume': fit_res[0][3], 'errV': fit_res[1][3]})
+        #data_box.sort(key=lambda x: x['elements'][2])
+        return data_box
+
+    def fit_murnaghan(self, path):
+        osz_path = os.path.join(path, 'voldep/volume_*/OSZICAR')
+        dir_list = [os.path.dirname(x) for x in glob.glob(osz_path)]
+        if not dir_list:
+            self.error_path.append(path)
+            return None
+        data = Energy(dir_list, 'POSCAR', 'OSZICAR')
+        data.data.sort(key=lambda x: x['volume'])
+        if len(data.data) <= 4:  # fitting paramよりデータが少ない
+            self.error_path.append(path)
+            return None
+        fit_res = FitData.Murnaghan_fit(data['volume'], data['energy'])
+        if fit_res[3].all() == 0:
+            self.error_path.append(path)
+            return None
+        lines = ""
+        for i in range(0, len(fit_res[0])):
+            lines += "{0}\t{1}\n".format(fit_res[0][i], fit_res[1][i])
+        fname = os.path.join(path, 'fit_curve.dat')
+        with open(fname, 'w') as wfile:
+            wfile.write(lines)
+        pylab.plot(data['volume'], data['energy'])
+        pylab.plot(fit_res[0], fit_res[1])
+        fname = os.path.join(path, 'murnaghan_plot.eps')
+        pylab.savefig(fname)
+        pylab.close()
+        lines = ""
+        lines += "Energy\t{0[2][0]}\terrE\t{0[3][0]}\n".format(fit_res)
+        lines += "B\t{0[2][1]}\terrB\t{0[3][1]}\n".format(fit_res)
+        lines += "B1\t{0[2][2]}\terrB1\t{0[3][2]}\n".format(fit_res)
+        lines += "Volume\t{0[2][3]}\terrV\t{0[3][3]}\n".format(fit_res)
+        fname = os.path.join(path, 'fit_results.dat')
+        with open(fname, 'w') as wfile:
+            wfile.write(lines)
+        return fit_res[2:]
 
 
 
@@ -731,6 +806,7 @@ class EnergyPre(object):
         """
         data_box = []
         for dirc in self.path_list:
+            print(dirc)
             path_oszi = os.path.join(dirc, self.filetype['output'])
             path_posc = os.path.join(dirc, self.filetype['poscar'])
             result = self.get_data_single(path_posc, path_oszi)

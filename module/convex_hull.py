@@ -10,6 +10,10 @@ import numpy as np
 from mpl_toolkits.mplot3d import Axes3D
 from commopy import Cabinet
 from mpl_toolkits.mplot3d import proj3d
+
+default_font = {'font.family': 'Times New Roman'}
+pylab.rcParams.update(default_font)
+
 def orthogonal_proj(zfront, zback):
     a = (zfront+zback)/(zfront-zback)
     b = -2*(zfront*zback)/(zfront-zback)
@@ -21,7 +25,8 @@ def orthogonal_proj(zfront, zback):
 
 proj3d.persp_transformation = orthogonal_proj
 
-def draw_convex_hull(ax, initial_base, not_bases, elements, zlim, **kwargs):
+def draw_convex_hull(ax, initial_base, not_bases, elements,
+                     zlim='auto', zlabel=True, **kwargs):
     """
     convex_hullを描く
     """
@@ -31,7 +36,11 @@ def draw_convex_hull(ax, initial_base, not_bases, elements, zlim, **kwargs):
     pt3d = PlotTriangularCoord(ax)
 
     pt3d.plt_triangle_dot(data, **kwargs)
-    pt3d.outline_base_plot(bases)
+    pt3d.outline_base_plot(bases, **kwargs)
+    if zlim == 'auto':
+        zmax = math.floor(max([x[2] for x in data]) / 10) * 10 + 10
+        zmin = math.ceil(min([x[2] for x in data]) / 10) * 10 - 10
+        zlim = [zmin, zmax]
 
     pt3d.make_flame(elements, zlim)
     return ax
@@ -46,7 +55,7 @@ class PlotTriangularCoord(object):
     def plt_line(self, X, Y, Z, color='gray'):
         self.ax.plot3D(np.ravel(X), np.ravel(Y), np.ravel(Z), color=color)
 
-    def make_flame(self, elements, zlim):
+    def make_flame(self, elements, zlim, zlabel=True):
         for i in range(0, 10):
             X_orig = np.array([1 - i*0.1, 0])
             Y_orig = np.array([0, 1 - i*0.1])
@@ -81,13 +90,28 @@ class PlotTriangularCoord(object):
             X, Y = alt_triangle(X_orig, Y_orig)
             Z = [zlim[0], zlim[0]]
             self.plt_line(X, Y, Z)
+        x = [-0.01, 0.01]
+        y = [-0.01, 0.01]
+        z = [zlim[0]/2, zlim[0]/2]
+        self.plt_line(x, y, z)
+
+
         self.ax.set_zlim(*zlim)
+        # 回転中心が重心になるようにxlim & ylimを設定
+        self.ax.set_ylim([-math.sqrt(3)/6., math.sqrt(3)/2.])
+        self.ax.set_xlim([-math.sqrt(3)/3.+1/2., +math.sqrt(3)/3.+1/2.])
 
         self.ax.axis("off")
         #self.ax.text(0, 0, zlim[0]/2., 'Energy')
         self.ax.text(0.5, math.sqrt(3)/2+0.1, 0, elements[0], size=18)
+        #center = np.array([[1/3., 1/3., 0]])
+        #self.plt_triangle_dot(center)
         self.ax.text(-0.1, -0.05, 0, elements[1], size=18)
         self.ax.text(1.1, -0.05, 0, elements[2], size=18)
+        #self.ax.text(0, 0, zlim[1], zlim[1], size=18)
+        if zlabel:
+            self.ax.text(-0.2, -0.1, zlim[0], zlim[0], size=18)
+            self.ax.text(-0.2, -0.1, zlim[0]/2, int(zlim[0]/2), size=18)
 
     def outline_base_plot(self, bases, **kwargs):
         """
@@ -195,7 +219,7 @@ class FindGS(object):
     def relative_energy(cls, base, point):
         """
         与えられた3点(base)のenergy surfaceに対するpointの相対エネルギーを算出
-        format of base: [A1,A2,A3]=[[x1,y1,e1],[x2,y2,e2],...]
+        format of base: [A1, A2, A3]=[[x1, y1, e1],[x2, y2, e2],...]
         """
         base_va = cls.vector(base[1], base[0])
         base_vb = cls.vector(base[2], base[0])
@@ -252,6 +276,73 @@ class FindGS(object):
         return new_triangles
 
     @classmethod
+    def resplit_triangle(cls, tri1, tri2):
+        """
+        辺を共有する三角形(tri1, tri2)を分解して2種類の3角形の取り方を比較、
+        安定な方を採用
+        三角形を組み直した場合 ３要素目にFalseをreturnする
+        """
+        joint = [x for x in tri1 if x in tri2]
+        not_joint = [x for x in tri1 if x not in tri2] + \
+                        [x for x in tri2 if x not in tri1]
+        judge = cls.which_lines(joint, not_joint)
+        if joint == judge:
+            return tri1, tri2, True
+        alt1 = not_joint + [joint[0]]
+        alt2 = not_joint + [joint[1]]
+
+        return alt1, alt2, False
+
+    @staticmethod
+    def which_lines(line1, line2):
+        """
+        二線分の交点を算出
+        安定な方をreturn
+        """
+        x1 = line1[0][0]
+        y1 = line1[0][1]
+        x2 = line1[1][0]
+        y2 = line1[1][1]
+
+        x3 = line2[0][0]
+        y3 = line2[0][1]
+        x4 = line2[1][0]
+        y4 = line2[1][1]
+
+        ksi = (y4-y3)*(x4-x1) - (x4-x3)*(y4-y1)
+        eta = -(y2-y1)*(x4-x1)+(x2-x1)*(y4-y1)
+        delta = (y4-y3)*(x2-x1)-(x4-x3)*(y2-y1)
+
+        e1 = line1[0][2]
+        e2 = line1[1][2]
+        e3 = line2[0][2]
+        e4 = line2[1][2]
+
+        if delta**2 < 1e-16:  # 平行の場合
+            return line1
+        else:
+            if 0 <= ksi/delta <= 1 and 0 <= eta/delta <= 1:  # 線分内にあるか
+                energy_A = e1+(e2-e1)*ksi/delta
+                energy_B = e4+(e3-e4)*eta/delta
+
+                if energy_A == energy_B:
+                    print('Both lines are same energy !!')
+                    return line1
+
+                elif energy_A > energy_B:
+                    return line2
+
+                elif energy_B > energy_A:
+                    return line1
+            return line1
+
+        # 参考: 交点は以下で求められる
+        # crosspoint = [x1+(x2-x1)*ksi/delta,
+        #               y1+(y2-y1)*ksi/delta,
+        #               energy_A, energy_B]
+
+
+    @classmethod
     def is_inside(cls, triangle, point):
         """
         三角形triangle a,b,cの内部に点point dが位置するか判定
@@ -293,25 +384,74 @@ class FindGS(object):
         return out[is_stable]
 
     @classmethod
+    def local_stable(cls, triangle, points):
+        """
+        三角形のenergy基準から最もenergyが低い点をreturnする
+        return: [relative_energy, point]
+        """
+        in_points = cls.separate_inout(triangle, points)[0]
+        energies = [[cls.relative_energy(triangle, x), x] for x in in_points]
+        energies.sort()
+        return energies[0]
+
+    @staticmethod
+    def find_adjacent_triangles(src_tri, triangles):
+        """
+        src_triに対して辺を共有する三角形を探し出す
+        新たに分割した三角形をsrc_triに取る場合、2つ以上はない (高々ひとつ)
+        """
+        out_tri = []
+        for tri in triangles:
+            judge = [x for x in tri if not x in src_tri]
+            if len(judge) == 1:
+                out_tri.append(tri)
+        return out_tri
+
+    @classmethod
+    def most_stable(cls, base_tris, points):
+        """
+        local_stableを集めて最安定の点を選択
+        """
+        energies = [[cls.local_stable(x, points), x] for x in base_tris]
+        energies.sort()
+        relative_e = energies[0][0][0]
+        point = energies[0][0][1]
+        triangle = energies[0][1]
+        return relative_e, point, triangle
+
+    @classmethod
     def collect_base_triangles(cls, initial_triangle, original_points):
-        """分割を繰り返し最安定の点を三点の一組で出力する"""
+        """
+        分割を繰り返し最安定の点を三点の一組で出力する
+        点を追加する度に基底の三角形を取り直す必要がある
+        """
         triangles = [initial_triangle]  # 分割した際に要素が増える
+        if not original_points:
+            return triangles
         bases = []
         points = copy.deepcopy(original_points)
-        while triangles:
-            new_stable = cls.is_exist_more_stable(triangles[0], points)
-            if not new_stable:
-                in_points = cls.separate_inout(triangles[0], points)[0]
-                bases.append(triangles[0])
-                triangles.pop(0)
-                for p in in_points:
-                    points.remove(p)
-            else:
-                new_triangles = cls.split_triangle(triangles[0], new_stable)
-                triangles.pop(0)
-                for triangle in new_triangles:
-                    triangles.append(triangle)
-        return bases
+        #  最安定を選択
+        relative_e, new_stable, eq_tri = cls.most_stable(triangles, points)
+        while relative_e < -1e-10:
+            new_triangles = cls.split_triangle(eq_tri, new_stable)
+            triangles.remove(eq_tri)
+            # 新しい三角形に対してより安定な三角形の取り方がないか判定
+            add_triangles = []
+            for tri in new_triangles:
+                adj_tri = cls.find_adjacent_triangles(tri, triangles)
+                judge = True
+                if adj_tri:
+                    tri1, tri2, judge = cls.resplit_triangle(tri, adj_tri[0])
+                if not judge:
+                    triangles.remove(adj_tri[0])
+                    triangles.append(tri2)
+                    add_triangles.append(tri1)
+                else:
+                    add_triangles.append(tri)
+            for tri in add_triangles:
+                triangles.append(tri)
+            relative_e, new_stable, eq_tri = cls.most_stable(triangles, points)
+        return triangles
 
     @staticmethod
     def outline_bases(base_set):
@@ -326,7 +466,7 @@ class FindGS(object):
         return lines
 
     @classmethod
-    def fromGround(cls, bases, points):
+    def fromGround(cls, bases, points, withGS=False):
         """basesから構成されるenergy surfaceからのrelative energy"""
         pts = copy.deepcopy(points)
         from_gs = []
@@ -334,10 +474,39 @@ class FindGS(object):
             in_points = cls.separate_inout(triangle, pts)[0]
             for point in in_points:
                 relative = cls.relative_energy(triangle, point)
-                from_gs.append([point[0], point[1], relative])
+                from_gs.append({False: [point[0], point[1], relative],
+                                True: [[point[0], point[1], relative],
+                                       triangle]}[withGS])
                 pts.remove(point)
         return from_gs
 
+    @classmethod
+    def get_ave_volume(cls, triangle, point):
+        """
+        triangleに対して組成点の平均volumeをreturn
+        pointの4点目にvolumeを入れておく
+        """
+        # 3番目の要素に組成比を追加
+        tri = copy.deepcopy(triangle)
+        pt = copy.deepcopy(point)
+        for tpt in tri:
+            tpt.insert(2, 1 - sum(tpt[0:2]))
+        pt.insert(2, 1 - sum(pt[0:2]))
+        ave_v = sum([x[i]*pt[i]*x[4] for x in tri for i in range(3)])
+        return ave_v
+
+    @classmethod
+    def ave_volume(cls, base, point):
+        """
+        与えられた3点(base)のvolumeに対するpoint組成での平均体積を算出
+        format of base: [A1, A2, A3]=[[x1, y1, e1, v1], [x2, y2, e2, v2],...]
+        """
+        base_va = cls.vector(base[1], base[0])
+        base_vb = cls.vector(base[2], base[0])
+        vec_point = cls.vector(point, base[0])
+        coeff = cls.coeff_synthetic_vect(base_va, base_vb, vec_point)
+        ave_volume = coeff[0] * base_va[3] + coeff[1] * base_vb[3] + base[0][3]
+        return ave_volume
 
 if __name__ == '__main__':
     pass

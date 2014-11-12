@@ -1,0 +1,16 @@
+1     Mo  Mo  Mo  Mo  1.000  0.000  
+2     Re  Re  Re  Re  0.000  1.000  
+3     Re  Mo  Mo  Mo  0.966  0.034  
+4     Mo  Re  Mo  Mo  0.862  0.138  
+5     Re  Re  Mo  Mo  0.828  0.172  
+6     Mo  Mo  Re  Mo  0.586  0.414  
+7     Mo  Mo  Mo  Re  0.586  0.414  
+8     Re  Mo  Re  Mo  0.552  0.448  
+9     Re  Mo  Mo  Re  0.552  0.448  
+10    Mo  Re  Re  Mo  0.448  0.552  
+11    Mo  Re  Mo  Re  0.448  0.552  
+12    Re  Re  Re  Mo  0.414  0.586  
+13    Re  Re  Mo  Re  0.414  0.586  
+14    Mo  Mo  Re  Re  0.172  0.828  
+15    Re  Mo  Re  Re  0.138  0.862  
+16    Mo  Re  Re  Re  0.034  0.966  

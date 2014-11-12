@@ -1,9 +1,10 @@
-#!/usr/bin/python
+#!/usr/bin/env python
 # -*- coding: utf-8 -*-
 """
 This module handles VASP Files
 inputを作成するIncar, Posca, Potcar, Kpoints
 outputを読むOszicar, Outcar
+ToDo:INCARのdefault objectのようなものを作成して整理したい
 """
 from __future__ import print_function
 # from __future__ import unicode_literals
@@ -18,11 +19,12 @@ from __future__ import generators
 #     text_type = str
 #     binary_type = bytes
 
-
 import os
 import re
 import math
 import copy
+import socket
+import shutil
 import numpy as np
 import solid
 from commopy import Cabinet, Vector, Bash
@@ -73,13 +75,17 @@ class Poscar(object):
             self.elements = None
             self.num_atoms = [int(x) for x in poscar_lines[5].split()]
             i = sum(self.num_atoms)
-            self.cell_sites = Cabinet.conv_lines2array(poscar_lines[7:7+i])
+            sites = [[float(x) for x in y.split()[0:3]]
+                     for y in poscar_lines[7:7+i]]
+            self.cell_sites = np.array(sites)
             self.vasp_version = 4
         else:
             self.elements = poscar_lines[5].split()  # vasp5
             self.num_atoms = [int(x) for x in poscar_lines[6].split()]
             i = sum(self.num_atoms)
-            self.cell_sites = Cabinet.conv_lines2array(poscar_lines[8:8+i])
+            sites = [[float(x) for x in y.split()[0:3]]
+                     for y in poscar_lines[8:8+i]]
+            self.cell_sites = np.array(sites)
             self.vasp_version = 5
 
     def __str__(self):
@@ -159,6 +165,7 @@ class Poscar(object):
         """
         a軸の記述を1, 0, 0に規格化する
         暫定的に作ったので値のチェックが別途必要
+        siteは分率表記である場合、この変換に作用されない
         """
         scale = self.get_lattice_length()[0]
         length = self.get_lattice_length()
@@ -286,12 +293,14 @@ class Potcar(object):
 
 class Kpoints(object):
     """This class manages KPOINTS file."""
-    def __init__(self, cell_lattices, dq, is_odd=True):
+    def __init__(self, cell_lattices, dq, parity='odd'):
         """Set self.kpoints"""
         q_vector = [2*math.pi/x for x in cell_lattices]
         kpoints = [int(round(x / dq)) for x in q_vector]
         kpoints_odd = [x + (1 - x % 2) for x in kpoints]
-        self.kpoints = {True: kpoints_odd, False: kpoints}.get(is_odd)
+        kpoints_even = [x + (x % 2) for x in kpoints]
+        self.kpoints = {'odd': kpoints_odd, False: kpoints,
+                        'even': kpoints_even}.get(parity)
 
     def alt_odd(self):
         """This attr. changes self.kpoints to odd_number"""
@@ -301,18 +310,26 @@ class Kpoints(object):
         """Each kpoints times var """
         self.kpoints = [int(x * var) for x in self.kpoints]
 
-    def write_kpoints(self, fname='KPOINTS'):
+    def write_kpoints(self, fname='KPOINTS', mode='M'):
         """Write KPOINTS file using self.kpoints"""
-        kp_lines = ('Automatic mesh\n0\nMonkhorst Pack\n'
-                    '  {0[0]}  {0[1]}  {0[2]}\n  0.  0.  0.\n'
-                    .format(self.kpoints))
+        if mode == 'M':
+            mline = "Monkhorst Pack"
+        elif mode == 'G':
+            mline = "Gamma"
+        kp_lines = ("Automatic mesh\n0\n{0}\n"
+                    "  {1[0]}  {1[1]}  {1[2]}\n  0.  0.  0.\n"
+                    .format(mline, self.kpoints))
         Cabinet.write_file(fname, kp_lines)
+
+    def make_kpoints_band(self, band):
+        pass
+
 
 
 class IncarReadWriteMixin(object):
     """Read & Write INCAR file methods"""
     @classmethod
-    def read_incar(cls, fname):
+    def from_file(cls, fname):
         """
         Read a Incar file, and make a incar_dict.
         """
@@ -328,6 +345,13 @@ class IncarReadWriteMixin(object):
                 incar_dict.update({key: value_list})
         cls.__fix_dict(incar_dict)
         return incar_dict
+
+    @classmethod
+    def read_incar(cls, fname):
+        """
+        ToDo: use from_file()
+        """
+        return cls.from_file(fname)
 
     @staticmethod
     def __fix_dict(incar_dict):
@@ -551,8 +575,9 @@ class IncarLoadPoscarObj(IncarSwitchTagsMixin):
     def make_magmom(self, mag=3):
         """Make magmom from num_atoms."""
         magmom = [mag for y in self.num_atoms for x in range(0, y)]
+        #magmom = ["{0}*{1}".format(x, mag) for x in self.num_atoms]
+        #return "  ".join(magmom)
         return magmom
-
 
 class IncarReadPoscar(IncarLoadPoscarObj):
     """
@@ -565,6 +590,42 @@ class IncarReadPoscar(IncarLoadPoscarObj):
 
 class MakeInputs(object):
     """Make inputs file of series"""
+    @classmethod
+    def phonon(cls, path, dim):
+        """
+        phonopy-qhaの計算に必要なファイルを生成
+        magmomの行が長くなる場合があるので、別個指定
+        """
+        poscar_obj = Poscar(os.path.join(path, 'POSCAR'))
+        dim_times = dim[0] * dim[1] * dim[2]
+        num_atoms = [x * dim_times for x in poscar_obj.num_atoms]
+        magmom = "  ".join(["{0}*{1}".format(x, 3) for x in num_atoms])
+
+        incar_obj = IncarReadPoscar(os.path.join(path, 'POSCAR'))
+        incar_obj['magmom'] = magmom
+        print('Hello!')
+        cls.make_potcar_kpoints_for_phonon(path, dim)
+        cls.static_for_phonon(path, incar_obj)
+
+        src_dir = os.path.join(MODULE_DIR, '../source/originalsVASP', 'Calc')
+        with open(os.path.join(src_dir, 'script-qha.sh'), 'r') as rfile:
+            lines = rfile.readlines()
+
+        dim_str = [str(x) for x in dim]
+        dim_times = dim[0] * dim[1] * dim[2]
+        lines[2] = "dim=\"{0}\"\n".format(" ".join(dim_str))
+        lines[5] = "nunit={0}\n".format(dim_times)
+        with open(os.path.join(path, 'script-qha.sh'), 'w') as wfile:
+            wfile.write("".join(lines))
+        os.chmod(os.path.join(path, 'script-qha.sh'), 0o775)
+
+        hostname = socket.gethostname()
+        thomson = "thomson.tagen.tohoku.ac.jp"
+        if hostname == thomson:
+            shutil.copyfile(os.path.join(src_dir, 'calc_thomson.sh'),
+                            os.path.join(path, 'calc.sh'))
+
+
     @classmethod
     def all(cls, path, incar_obj=None, kp_rx=0.15, kp_soc=0.11):
         """
@@ -583,7 +644,7 @@ class MakeInputs(object):
                    'dos', 'band', 'static']
         for method in methods:
             getattr(cls, method)(path, incar_obj)
-        src_dir = os.path.join(MODULE_DIR, '../sorce/originalsVASP', 'Calc')
+        src_dir = os.path.join(MODULE_DIR, '../source/originalsVASP', 'Calc')
         dst_dir = os.path.join(path, 'Calc')
         Bash.copy_dir(src_dir, dst_dir)
 
@@ -593,6 +654,7 @@ class MakeInputs(object):
         incar = copy.deepcopy(base)
         incar.switch_relax_stracture(relax_sw=True, isif=3)
         incar.switch_istart_lwave(read_sw=False, write_sw=False)
+        incar['nelm'] = 40
         fname = os.path.join(path, 'INCAR_relax')
         incar.write_incar(fname)
 
@@ -604,6 +666,7 @@ class MakeInputs(object):
         incar['encut'] /= 1.3
         incar['isym'] = 0
         incar.switch_istart_lwave(read_sw=False, write_sw=False)
+        incar['nelm'] = 40
         fname = os.path.join(path, 'INCAR_cell')
         incar.write_incar(fname)
 
@@ -615,6 +678,7 @@ class MakeInputs(object):
         incar['encut'] /= 1.3
         incar['isym'] = 0
         incar.switch_istart_lwave(read_sw=False, write_sw=False)
+        incar['nelm'] = 40
         fname = os.path.join(path, 'INCAR_ion')
         incar.write_incar(fname)
 
@@ -624,6 +688,7 @@ class MakeInputs(object):
         incar = copy.deepcopy(base)
         incar.switch_relax_stracture(relax_sw=True, isif=7)
         incar.switch_istart_lwave(read_sw=False, write_sw=False)
+        incar.update({'nelm': 40})
         fname = os.path.join(path, 'INCAR_volume')
         incar.write_incar(fname)
 
@@ -634,6 +699,7 @@ class MakeInputs(object):
         incar.switch_relax_stracture(relax_sw=True, isif=7)
         del incar.incar_dict['ediffg']
         incar.switch_istart_lwave(read_sw=False, write_sw=False)
+        incar.update({'nelm': 40})
         fname = os.path.join(path, 'INCAR_volumeE')
         incar.write_incar(fname)
 
@@ -771,6 +837,21 @@ class MakeInputs(object):
         incar.write_incar(fname)
 
     @staticmethod
+    def static_for_phonon(path, base):
+        """
+        For static calculation. (no relaxation)
+        with ADDGRID = .TRUE.
+        """
+        incar = copy.deepcopy(base)
+        incar.switch_istart_lwave(read_sw=False, write_sw=False)
+        incar.switch_mae_calc_condition(mae_sw=False, lmaxmix=4, soc_sw=False)
+        incar['isym'] = 0
+        incar['addgrid'] = True
+        fname = os.path.join(path, 'INCAR')
+        incar.incar_dict.update({'encut': 400})
+        incar.write_incar(fname)
+
+    @staticmethod
     def make_potcar_kpoints(path, relax=0.15, soc=0.11):
         """
         POTCAR and KPOINTS files are made from POSCAR condition.
@@ -784,6 +865,20 @@ class MakeInputs(object):
         kpoints_relax.write_kpoints(os.path.join(path, 'KPOINTS_relax'))
         kpoints_reduc.write_kpoints(os.path.join(path, 'KPOINTS_relax_reduced'))
         kpoints_soc.write_kpoints(os.path.join(path, 'KPOINTS_soc'))
+
+    @staticmethod
+    def make_potcar_kpoints_for_phonon(path, dim):
+        """
+        POTCAR and KPOINTS files are made from SPOSCAR
+        """
+        poscar = Poscar(os.path.join(path, 'POSCAR'))
+        potcar = Potcar(poscar.elements)
+        latt = poscar.get_lattice_length()
+        latt_spcell = [x * y for x, y in zip(latt, dim)]
+        kpoints = Kpoints(latt_spcell, 0.30, 'even')
+
+        potcar.write_potcar(path)
+        kpoints.write_kpoints(os.path.join(path, 'KPOINTS'), 'G')
 
 
 class Oszicar(object):
@@ -835,9 +930,13 @@ class Oszicar(object):
                                 'energy': energy, 'mag': mag})
         if not results:
             last_val = lines[-1].split()
-            if math.fabs(float(last_val[3])) > 1e-5:
-                print("{0} is unfinished with error. ".format(fname))
-                return []
+            try:
+                if math.fabs(float(last_val[3])) > 1e-5:
+                    print("{0} is unfinished with error. ".format(fname))
+                    return []
+            except ValueError:
+                    print("{0} is unfinished with error. ".format(fname))
+                    return []
             print("{0} is unfinished but converged. "
                   "(val. of mag is false)".format(fname))
             results.append({'iter_num': int(last_val[1]), 'nsw_num': 1,

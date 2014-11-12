@@ -1,11 +1,14 @@
-#!/opt/anaconda/bin/python
+#!/usr/bin/env python
 # -*- coding: utf-8 -*-
+#from __future__ import unicode_literals
+
 import sys
 import re
 import os
 from commopy import Cabinet, TrialRun, Bash
 from cifpy import Cif2Cell
 import vaspy
+import pymatgen.io.vaspio as pmg
 
 
 def main():
@@ -47,10 +50,93 @@ def selectRun(dirc):
         if sys.argv[1] == '-cif':
             execute_cif2cellAuto(dirc)
 
+        if sys.argv[1] == '--phonon':
+            dim = [int(x) for x in sys.argv[2].split()]
+            print(dim)
+            vaspy.MakeInputs.phonon(dirc, dim)
+
+        if sys.argv[1] == '--remake_soc':
+            ris = RemakeIncSoc()
+            ris.remake_all()
+
+        if sys.argv[1] == '--remake_from_fin':
+            RemakeIncSoc.soc_from_nc('INCAR', 'INCAR_presoc_nc')
 
 def execute_ConvIncarSoc(dirc):
     Conv = ConvIncarSoc(dirc, 'OUTCAR_ibzkp')
     Conv.convert_all(dirc)
+
+
+class RemakeIncSoc(vaspy.IncarSwitchTagsMixin):
+    """
+    custodianによって修正されたINCAR_presoc_ncを元に
+    INCAR_soc***を再作成する
+    変換内容:
+        MAGMOMなし
+        SAXIS追記
+        EDIFF = 1e-06
+        ISTART = 1
+        ICARGE = 11
+        LWAVE = False
+        LCHARG = False
+        LNONCOLLINEARなし
+        LSORBIT = True
+        の計9箇所
+    """
+    cls_fixed_tag = {}
+
+    def __init__(self, path='.', fname='INCAR'):
+        self.incar_dict = self.from_file(fname)
+        self.incar_out_list = list(x for x in self.incar_dict.keys())
+        self.saxis_list = [[0, 0, 1], [1, 1, 0], [1, 0, 0], [1, 1, 1]]
+        self.fixed_tag = {}
+        self.alt2soc()
+
+    def alt2soc(self):
+        """
+        saxis以外のtagをsoc計算用に修正
+        """
+        self.incar_dict.pop('magmom')
+        self.incar_dict.pop('lnoncollinear')
+        self.update({'lsorbit': True})
+        self.update({'ediff': 1e-06})
+        self.incar_out_list += ['lsorbit', 'ediff']
+        self.switch_istart_lwave(read_sw=True, write_sw=False)
+
+    def remake(self, saxis, fname='INCAR_soc'):
+        """
+        saxisを設定してINCARを作成する
+        """
+        self.update({'saxis': saxis})
+        dst = fname + "".join([str(x) for x in saxis])
+        self.write_incar(dst)
+
+    def remake_all(self, path='.'):
+        """
+        self.saxis_list中のsaxisのINCARを全部作成する
+        """
+        for saxis in self.saxis_list:
+            self.remake(saxis)
+
+    @classmethod
+    def soc_from_nc(cls, src, dst):
+        """
+        custodianによって修正されたINCARを元にINCARをremakeする
+        INCAR_presoc_ncからINCAR_soc***への変換
+        """
+        diff_soc_nc = ['EDIFF', 'ICHARG', 'ISTART', 'LCHARG', 'LNONCOLLINEAR',
+                       'LSORBIT', 'LWAVE', 'MAGMOM', 'SAXIS']
+        src_inc = pmg.Incar.from_file(src)
+        dst_inc = pmg.Incar.from_file(dst)
+
+        # INCARの差分を取る
+        diff = src_inc.diff(dst_inc)['Different']
+        # socとnc計算由来の差分を除去
+        [diff.pop(x) for x in diff_soc_nc if x in diff]
+        diff = {key: values['INCAR1'] for key, values in diff.items()}
+        print(diff)
+        dst_inc.update(diff)
+        dst_inc.write_file(dst)
 
 
 class ConvIncarSoc(vaspy.IncarReadWriteMixin):

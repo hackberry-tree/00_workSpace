@@ -94,6 +94,10 @@ class VaspyPoscar(unittest.TestCase): #pylint: disable=R0904
         self.assertEqual(poscar2.cell_lattices[0, 2], 0)
 
 
+
+
+
+
 def clean_prev(path, files):
     """
     filesを消去

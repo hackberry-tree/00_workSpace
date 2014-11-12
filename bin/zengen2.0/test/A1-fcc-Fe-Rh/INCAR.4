@@ -1,0 +1,36 @@
+general:
+  SYSTEM    = step4 SQS fcc            
+  ISTART    = 1      # 0 starting job, 1 WAVECAR
+  ICHARG    = 0      # initial charge dens : 0 from WAVECAR, 1 from CHGCAR, 2 from POTCAR, 11 for DOS 
+  GGA       = PE     # 91 | *PE* | RP | PS | AM
+  ENCUT     = 400    # Cutoff Energy
+#  LELF      = .TRUE. # create ELFCAR
+#  LAECHG    = .TRUE. # create AECHCAR.x
+#  LORBIT    = 10     # create PROOUT
+   NPAR     = 4 
+#  NBANDS = 100
+
+electronic minimization:
+  EDIFF     = 1E-5   # accurancy, allowed error in total energy 
+  NELM      = 100    # max of electronic steps
+  IALGO     = 38     # algorithm 38 (Kosugi), or faster 48 (RMM-DIIS)
+  LREAL     = False  # real-space projection, False or True
+  PREC      = accurate
+
+Ionic Relaxation
+  NSW       =  50    # number of steps for IOM
+#  EDIFFG    =  1E-04 # stopping-criterion for IOM, =10*EDIFF, or <0 for condition on forces
+  ISIF      =    2   # relax: 2-ion, 3-all, 4-ion+shape, 5-shape, 6-shape+vol, 7-vol
+  IBRION    =    1   # ionic relax: 0-MD 1-quasi-New 2-CG
+  POTIM     = 0.25   # time-step for ionic-motion
+
+DOS related values:
+  ISMEAR    =  1     # 0,1,-5 method to determine partial occupancies
+  SIGMA     =  0.2   # 
+
+#Spin:
+#  ISPIN    =  2
+#  MAGMOM   =  16*2
+#  LNONCOLLINEAR =  F   # non collinear calculations
+#  LSORBIT  =  F        # spin-orbit coupling
+

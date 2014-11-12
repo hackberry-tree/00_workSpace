@@ -1,6 +1,5 @@
-#! /usr/bin/env python
-
-
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
 # vasp_unfold
 #
 # Author: Tomic Milan
@@ -15,7 +14,7 @@
 # However, if you encounter errors or unexpected behavor, please report
 # it to tomic@itp.uni-frankfurt.de and I will try to improve it.
 
-
+from functools import reduce
 import numpy as np
 import argparse
 import sys
@@ -39,27 +38,40 @@ def translation(tstring):
 
 
 def gcd(a, b):
-    '''Return greatest common divisor using Euclid's Algorithm.'''
+    '''
+    Return greatest common divisor using Euclid's Algorithm.
+    最大公約数
+    '''
     while b:
         a, b = b, a % b
     return a
 
 
 def lcm(a, b):
-    '''Return lowest common multiple.'''
+    '''
+    Return lowest common multiple.
+    最小公倍数
+    '''
     return a * b // gcd(a, b)
 
 
 def lcmm(*args):
-    '''Return lcm of args.'''
+    '''
+    Return lcm of args.
+    argsすべてについての最小公倍数
+    '''
     return reduce(lcm, args)
 
 
 
 
 def parse_poscar(poscar):
-    '''Parse the VASP's POSCAR file and return the unit cell
+    '''
+    Parse the VASP's POSCAR file and return the unit cell
     and the list of fractional coordinates.
+    return:
+        cell :cellの3d array
+        spos :site positions
     '''
     try:
         plines = open(poscar).readlines()
@@ -85,7 +97,7 @@ def parse_poscar(poscar):
         symbols += [s]*c
 
     # Cartesian or fractional coordinates?
-    if l[7].lower() == 'c':
+    if plines[7].lower()[0] == 'c':
         mult = np.linalg.inv(cell)
     else:
         mult = np.eye(3)
@@ -114,6 +126,7 @@ def build_operators(spos, trans, eps=1e-6):
     describing how fractional translations permute atomic
     positions within the unit cell. Two fractional positions
     si and sj are considered to be identical when |si-sj|<eps.
+    transさせて重なる元素(site)の組み合わせを記した行列
     '''
     ntrans = len(trans)
     natoms = len(spos)
@@ -128,8 +141,11 @@ def build_operators(spos, trans, eps=1e-6):
                 # by a lattice translation+-eps we consider the
                 # that two atomic positions to be map onto each
                 # other by the fractional translation
-                disp = sk-sj-ti
-                ops[i, j, k] = np.linalg.norm(disp-np.rint(disp)) < eps
+                disp = sk - sj - ti
+                # np.rint:四捨五入
+                # dispがepsの範囲内で整数(負の整数)に近いか判定
+                # 整数ならば1を、そうでなければ0を入れた行列作成
+                ops[i, j, k] = np.linalg.norm(disp - np.rint(disp)) < eps
 
     # Every row and every column of every operator must
     # contain exactly one unity, otherwise translations
@@ -138,20 +154,23 @@ def build_operators(spos, trans, eps=1e-6):
         post_error('Translations are not one-to-one. '
             'Try changing the matching tolerance, or try using '
             'the POSCAR file with more regular positions.')
-
     return ops
 
 
 def build_translations(tgens):
-    '''Build a list of translations and irreps from at most
+    '''
+    Build a list of translations and irreps from at most
     three linearly independent generators specified in the
     form [nx,ny,nz], representing translation [1/nx,1/ny,1/nz].
     '''
+    # 3つまで
     if len(tgens) > 3:
         post_error('There can be at most three generators '
             'of fractional translations.')
 
     # Check if generators are linearly independent
+    # np.cross, np.linalg.det: 外積
+    # 外積=0は2つのベクトルが重なる
     if len(tgens) == 2 and np.all(np.cross(tgens[0], tgens[1]) == 0):
         post_error('Generators are not linearly independant.')
     elif len(tgens) == 3 and np.linalg.det(tgens) == 0:
@@ -159,8 +178,8 @@ def build_translations(tgens):
 
     # Expand the generator list to have a 3x3 matrix
     tgens = np.append(tgens, np.ones((3-len(tgens), 3)), axis=0)
-
     # Get the order of every generator
+    # 各行の最小公倍数
     order = np.array([lcmm(*g) for g in tgens], int)
 
     # Get the corresponding roots of unity which will be
@@ -181,9 +200,9 @@ def build_translations(tgens):
 
     # Loop over all possible products of powers of generators
     # and store the irreps
-    for i in xrange(order[0]):
-        for j in xrange(order[1]):
-            for k in xrange(order[2]):
+    for i in range(order[0]):
+        for j in range(order[1]):
+            for k in range(order[2]):
                 ii = i*order[1]*order[2]+j*order[2]+k
 
                 irrepg[ii] = deltag**[i, j, k]
@@ -192,23 +211,23 @@ def build_translations(tgens):
     irreps = np.zeros((ntrans, ntrans), complex)
 
     # Loop over all posible products of powers of generators
-    for i in xrange(order[0]):
-        for j in xrange(order[1]):
-            for k in xrange(order[2]):
+    for i in range(order[0]):
+        for j in range(order[1]):
+            for k in range(order[2]):
                 ti = i*order[1]*order[2]+j*order[2]+k
 
                 # Get the translation vector
                 trans[ti] = np.dot([i, j, k], tgens)%1
 
                 # Get all irreps of that translations
-                for l in xrange(ntrans):
+                for l in range(ntrans):
                     irreps[l, ti] = np.prod(irrepg[l]**[i, j, k])
-
     return trans, irreps
 
 
 def build_projectors(irreps, ops, intdim=1):
-    '''Builds irrep projection operators, given irreps
+    '''
+    Builds irrep projection operators, given irreps
     and corresponding translation operator matrices.
     Intdim specifies how many orbitals per atomic site
     there are.
@@ -277,8 +296,8 @@ def parse_procar(filename):
     bands = np.zeros((npoints, nbands), float)
     occupations = np.zeros((npoints, nbands), float)
     weights = np.zeros((npoints, nions*norbs, nbands), complex)
-
-    for i in xrange(npoints):
+    print(npoints)
+    for i in range(npoints):
         # Read the k-point and its weight
         line = procar.readline()
         lspl = line.strip().split()
@@ -289,7 +308,7 @@ def parse_procar(filename):
         # Skip the empty line
         procar.readline()
 
-        for j in xrange(nbands):
+        for j in range(nbands):
             # Read the band energy and the occupations
             line = procar.readline()
             lspl = line.strip().split()
@@ -304,7 +323,7 @@ def parse_procar(filename):
             procar.readline()
 
             # Skip the weights
-            for k in xrange(nions):
+            for k in range(nions):
                 procar.readline()
 
             # Skip the totals
@@ -313,7 +332,7 @@ def parse_procar(filename):
             # Skip the orbit labels
             procar.readline()
 
-            for k in xrange(nions):
+            for k in range(nions):
                 # Get the real part
                 line = procar.readline()
                 weights[i, k*norbs:(k+1)*norbs, j] = \
@@ -342,7 +361,7 @@ def write_procar(fname, orbitals, kpoints, kweights, bands,
     norb = len(orbitals)
     npoints = len(kpoints)
     nbands = bands.shape[1]
-    nions = weights.shape[1]/norb
+    nions = weights.shape[1]//norb
 
     try:
         out = open(fname, 'w')
@@ -360,7 +379,7 @@ def write_procar(fname, orbitals, kpoints, kweights, bands,
     orb_ttl_1 = 'ion '
     orb_ttl_2 = 'ion '
 
-    for i in xrange(norb):
+    for i in range(norb):
         orb_ttl_1 += '{0: >6} '.format(orblabels[i])
         orb_ttl_2 += '{0: >6} '.format(orblabels[i])
 
@@ -383,7 +402,7 @@ def write_procar(fname, orbitals, kpoints, kweights, bands,
 
             tot_orb = np.zeros(norb, float)
 
-            for k in xrange(nions):
+            for k in range(nions):
                 out.write('{0: >3} '.format(k+1))
 
                 cw = weights[i, k*norb:(k+1)*norb, j]
@@ -391,31 +410,31 @@ def write_procar(fname, orbitals, kpoints, kweights, bands,
 
                 tot_orb += aw
 
-                for l in xrange(norb):
+                for l in range(norb):
                     out.write('{0: >6.3f} '.format(aw[l]))
 
                 out.write('{0: >6.3f}\n'.format(np.sum(aw)))
 
             out.write('tot ')
 
-            for l in xrange(norb):
+            for l in range(norb):
                 out.write('{0: >6.3f} '.format(tot_orb[l]))
 
             out.write('{0: >6.3f}\n'.format(np.sum(tot_orb)))
 
             out.write(orb_ttl_2)
 
-            for k in xrange(nions):
+            for k in range(nions):
                 out.write('{0: >3} '.format(k+1))
 
                 cw = weights[i, k*norb:(k+1)*norb, j]
 
-                for l in xrange(norb):
+                for l in range(norb):
                     out.write('{0: >6.3f} '.format(cw[l].real))
 
                 out.write('\n{0: >3} '.format(k+1))
 
-                for l in xrange(norb):
+                for l in range(norb):
                     out.write('{0: >6.3f} '.format(cw[l].imag))
 
                 out.write('\n')
@@ -498,7 +517,7 @@ def main():
         output = args.out
 
     for i, p in enumerate(projs):
-        for j in xrange(data[-1].shape[0]):
+        for j in range(data[-1].shape[0]):
             try:
                 data[-1][j] = np.dot(p, weights[j])
             except:

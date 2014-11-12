@@ -1,0 +1,8 @@
+
+go da
+sw pure
+def_sy CO CR FE MN MO NB NI OS RE RU TA TC V W
+get
+go g
+l_d DFT-sigma-v1.TDB N 
+ exit

@@ -303,7 +303,8 @@ if (! $?norun ) then
     echo IBRION=-1 >>! INCAR
     echo ISIF=2 >>! INCAR
 
-    echo | $VASPCMD >&! vasp.out
+    #echo | $VASPCMD >&! vasp.out
+    echo | custodian_static.py
   endif
   foreach file (INCAR POSCAR OSZICAR OUTCAR CONTCAR KPOINTS vasp.out DOSCAR)
     cp -f $file ${file}.static

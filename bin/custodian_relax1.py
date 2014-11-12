@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 """
 custodianを使用して構造緩和を行う
-2回の構造緩和計算を実行
+1回の構造緩和計算を実行
 """
 from custodian.custodian import Custodian
 from custodian.vasp.handlers import UnconvergedErrorHandler

@@ -1,0 +1,34 @@
+general:
+  SYSTEM    = P-phase -CrMoNi
+  ISTART    = 1     # 0 starjob, 1 WAVECAR
+  ICHARG    = 0     # 0 from Wavefunction, 1 CHGCAR, 2 from atom, 11 DOS 
+  LORBIT    = 10    # create PROOUT
+  ENCUT     = 400   # Cutoff Energy
+   NPAR     = 4 
+#   LWAVE    = .FALSE.
+
+electronic minimization:
+   EDIFF    = 1E-4  # accurancy, allowed error in total energy 
+    NELM    = 100   #  max of electronic step
+    PREC    = accurate
+   IALGO    = 38    # algorithm 8 (CG) or 48 (RMM-DIIS)
+   LREAL    = False # real-space projection, False or True
+#   LDIAL    = T     # perform sub-space diagonalisation
+
+Ionic Relaxation
+#   EDIFFG =  -1E-2  # accurancy, allowed error in total energy 
+   NSW    =     10  # number of steps for IOM
+   ISIF   =      6  # stress and relaxation
+   IBRION =      2  # ionic relax: 0-MD 1-quasi-New 2-CG
+#   IWAVPR =      0  # prediction:  0-non 1-charg 2-wave 3-comb
+#   ISYM   =      1  # 0-nonsym 1-usesym 2-fastsym
+   POTIM  =   0.20  # time-step for ionic-motion
+
+DOS related values:
+ ISMEAR    =  1    # 0,1,-5 method to determine partial occupancies
+ SIGMA     =  0.2  # 
+
+spin:
+  ISPIN=2
+  MAGMOM = 56*2
+

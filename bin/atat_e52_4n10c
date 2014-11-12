@@ -1,0 +1,5 @@
+#!/bin/bash
+Machine=`echo ${0##*/} | sed 's/atat_//g'`
+
+export RUNSTRUCT_TORQUE=/opt/atat_3.04/torque/pbs_${Machine}.sh
+pollmach -m $HOME/.machines/${Machine}.rc /opt/atat_3.04/torque/runstruct_torque.sh

@@ -1,0 +1,29 @@
+JOB     DEBUG=F                  (no debugging)
+*     (the program finds the largest and most compact max clusters)
+TT      NMAX=1 NSMAX=8 PRNTMAXCL=T  (tetrahedron)
+        NSITE1=4
+        POS_1_1=0 0 0 POS_1_2=1 0 0 POS_1_3=1/2 1/2 1/2   POS_1_4=1/2 -1/2 1/2
+*tetrahedron octahedron
+TO      RMAX=4.1 NSMAX=3  PRNTMAXCL=T NMAX=0
+*octahedron + two 5-point clusters, up to fourth nearest pairs
+*OP4     RMAX=3.65 NSMAX=7  PRNTMAXCL=T NMAX=0
+
+UNITS   UNITS   ETOT_TO_meV=1000
+        dE/dX:PRESS=T X:LATTPRMTR=F ATOMS/X**3=1
+         VOLUME_TO_BOHR**3=1
+* input pressure is MPa unit
+* it is rescaled to K/bohr**3 in eform.f
+* so volume must be rescaled to bohr here
+
+
+ECLI    METHOD=Aufbau Enum Fixed OPTIMIZEDERROR=Pred Fit
+
+* pressure unit is MPa
+CVMGEN  ERRMAX=1 CVMITER=50 TLIMIT=9999
+        SPINPH=BCC ZEROP=BCC dE/dX=0 PRNTCF=F
+        PRNTSITEDECOMP=F PRNTVOL=T
+        PRNTSOCC=T
+
+CVMAUTO CMIN=0.01 CMAX=0.99 TMAX=8000 TSTP=10 CMATDIS=BCC
+
+EQUIL   ZERO_OP_OK?=F CSTP=0.01

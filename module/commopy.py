@@ -206,8 +206,8 @@ class Cabinet(object):
         """
         read_file(fname) read 'fname' file and return list lines.
         """
-        with open(fname, 'r') as fread:
-            read_lines = fread.readlines()
+        with open(fname, 'r') as rfile:
+            read_lines = rfile.readlines()
         return read_lines
 
     @staticmethod
@@ -224,9 +224,9 @@ class Cabinet(object):
         """
         write_file(fname, lines) write 'lines' into 'fname' file.
         """
-        with open(fname, 'w') as fwrite:
+        with open(fname, 'w') as wfile:
             for line in lines:
-                fwrite.write(line)
+                wfile.write(line)
 
     @staticmethod
     def append_file(fname, lines):

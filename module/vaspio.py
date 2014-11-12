@@ -23,9 +23,9 @@ from pymatgen.io.vaspio import vasp_input
 class Poscar(vasp_input.Poscar):
     def __init__(self, structure, comment=None, selective_dynamics=None,
                  true_names=True, velocities=None, predictor_corrector=None):
-        vasp_input.Poscar.__init__(self, structure, comment=None,
-                                   selective_dynamics=None, true_names=True,
-                                   velocities=None, predictor_corrector=None)
+        super(Poscar, self).__init__(self, structure, comment=None,
+                                     selective_dynamics=None, true_names=True,
+                                     velocities=None, predictor_corrector=None)
 
 class ProduceVaspInputs(object):
     """Make inputs file of series"""
