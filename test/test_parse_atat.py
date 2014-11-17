@@ -24,23 +24,27 @@ class Test(unittest.TestCase):
     """
     PATH = os.path.join(TEST_PATH, 'atat')
 
-    def _test_strout(self):
+    def test_strout(self):
         """
         StrOutのテスト
         """
-        src = os.path.join(self.PATH, 'Fe-Ni', '10487')
-
-        #strout = parse_atat.StrOut.from_file(src)
+        src = os.path.join(self.PATH, 'Fe-Ni', '0', 'str_relax.out')
+        strout = parse_atat.StrOut.from_file(src)
         #print(strout.structure)
         #print(dir(strout.prim_cif))
         #strout.prim_cif
-        #dst = os.path.join(self.PATH, 'Fe-Ni', '10487', 'str.cif')
-        #strout.prim_cif(dst)
+        dst = os.path.join(self.PATH, 'Fe-Ni', '0', 'str.cif')
+        strout.prim_cif(dst)
 
     def test_analysis(self):
         dirc = os.path.join(self.PATH, 'Fe-Ni')
         analysis = parse_atat.Analysis.from_dirc(dirc)
-        print(analysis.to_tex_form())
+        path = os.path.join(dirc, 'reproduce_energy.txt')
+        analysis.set_cvm_enthalpy(path)
+        lines = analysis.to_tex_form(form_key=['Fe', 'Ni'].index)
+
+        with open(os.path.join(dirc, 'tex.tex'), 'w') as wfile:
+            wfile.write(lines)
 
 
 

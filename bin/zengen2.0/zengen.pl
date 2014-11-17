@@ -20,7 +20,7 @@ use Cwd;
 #######################################################"
 #
 # where is ZEN folder ?
-$zenfolder='/home/enoki/zengen2.0'; 
+$zenfolder='/home/enoki/Dropbox/00_scripts/bin/zengen2.0/'; 
 $potdir='/home/enoki/vasp/vasp_potential/vasp/potpaw_PBE';
 
 # @El    : table of elements 

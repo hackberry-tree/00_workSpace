@@ -58,7 +58,7 @@ def produce(irreps):
         poscar = Poscar(irrep)
         symbols = poscar.site_symbols
         natoms = poscar.natoms
-        name_dict = {'Fe': 'A', 'Ni': 'B'}
+        name_dict = {'Al': 'A', 'Ti': 'B'}
         tmp = ["{0}{1}".format(name_dict[x], y)
                for x, y in zip(symbols, natoms)]
         finder = SymmetryFinder(irrep)

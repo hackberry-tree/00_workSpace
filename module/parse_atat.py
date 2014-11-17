@@ -44,6 +44,7 @@ class StrOut(object):
 
         finder = SpacegroupAnalyzer(self.structure)
         structure = finder.get_primitive_standard_structure()
+        structure = finder.get_conventional_standard_structure()
         cif = CifWriter(structure, find_spacegroup=True, symprec=0.1)
         cif.write_file(dst)
 
@@ -83,6 +84,7 @@ class Analysis(object):
     def __init__(self, path_list):
         self.path_list = path_list
         self.data = self.get_data()
+        self.data.sort(key=lambda x: int(x['str_id']))
         self._set_enthalpy()
 
 
@@ -100,6 +102,7 @@ class Analysis(object):
                 path_list.remove(err)
             except ValueError:
                 pass
+        # path_list = [os.path.join(dirc, '0')] #  for test
         return cls(path_list)
 
 
@@ -115,23 +118,25 @@ class Analysis(object):
         src = os.path.join(dirc, src_ene)
         with open(src, 'r') as rfile:
             lines = rfile.readlines()
-        energy = (float(lines[0]))
+        num_atoms = sum(strout.structure.composition.
+                        to_data_dict['unit_cell_composition'].values())
+        energy = float(lines[0]) / num_atoms
 
         analyzer = SpacegroupAnalyzer(strout.structure)
-        std_prim = analyzer.get_primitive_standard_structure()
-        analyzer = SpacegroupAnalyzer(std_prim)
+        #std_prim = analyzer.get_primitive_standard_structure()
+        std_str = analyzer.get_conventional_standard_structure()
+        analyzer = SpacegroupAnalyzer(std_str)
         wyckoffs = analyzer.get_symmetry_dataset()['wyckoffs']
-        formula = std_prim.composition.to_data_dict['unit_cell_composition']
+        formula = std_str.composition.to_data_dict['unit_cell_composition']
 
         symbol_spg = analyzer.get_spacegroup_symbol()
         num_spg = analyzer.get_spacegroup_number()
         spg = [symbol_spg, num_spg]
 
-        lattice = std_prim.as_dict()['lattice']
+        lattice = std_str.as_dict()['lattice']
 
         equiv_sites = analyzer.get_symmetrized_structure().equivalent_sites
         equiv_indices = analyzer.get_symmetrized_structure().equivalent_indices
-
         # Wycoffs labelと組み合わせたsites_groupのlistを作る
         sites_and_wyckoffs = []
         for eq_s, eq_i in zip(equiv_sites, equiv_indices):
@@ -163,38 +168,43 @@ class Analysis(object):
         self.dataにenthalpyをsetをする
         refデータが単体のみ対応
         """
-        ref_data = {list(x['formula'].keys())[0]:
-                    x['energy']/sum(x['formula'].values())
+        ref_data = {list(x['formula'].keys())[0]: x['energy']
                     for x in self.data if int(x['str_id']) in ref_id}
         for data in self.data:
-            ref = sum([ref_data[x]*data['formula'][x]
-                       for x in data['formula'].keys()])
-            enthalpy = (data['energy'] - ref) / sum(data['formula'].values())
-            data.update({'enthalpy': enthalpy})
+            ref = (sum([ref_data[x]*data['formula'][x]
+                       for x in data['formula'].keys()]) /
+                   sum(data['formula'].values()))
+            enthalpy = data['energy'] - ref
+            data.update({'enthalpy': enthalpy * 1000})
 
-    def to_tex_form(self, form=0):
+    def to_tex_form(self, form=0, form_key=None):
         """
         texのフォーマットで結果を出力
         """
         func = [self._tex_form_00][form]
         lines = ""
         for data in self.data:
-            lines += data['str_id'] + "\n"
+            # lines += data['str_id'] + "\n" #  for test
             lines += func(data)
         return lines
 
-    def _tex_form_00(self, data):
+    def _tex_form_00(self, data, form_key=None):
         """
         formula & spg & lattice & sites & enthalpyを出力
         """
         lines = ""
-        form_line = [self.str_formula(data['formula'], tex=True)]
+        form_line = [self.str_formula(data['formula'], key=form_key, tex=True)]
         spg_line = [self.str_spg(data['spg'], tex=True)]
         latt_lines = self.str_lattice_list(data['lattice'], tex=True)
         sites_lines = self.str_sites_list(data['sites_and_wyckoffs'])
-        enthalpy = ["{0:.3f}".format(data['enthalpy'])]
+        try:
+            enthalpy = ["{0:.1f}".format(data['enthalpy']),
+                        "({0:.1f})".format(data['cvm_enthalpy'])]
+        except KeyError:
+            enthalpy = ["{0:.1f}".format(data['enthalpy'])]
 
-        lenmax = max([len(latt_lines), len(sites_lines)])
+
+        lenmax = max([len(latt_lines), len(sites_lines), len(enthalpy)])
 
         tex_lines = ""
         for i in range(lenmax):
@@ -204,6 +214,7 @@ class Analysis(object):
             tex_lines += self._get_tex_table_cell(sites_lines, i)  + " & "
             tex_lines += self._get_tex_table_cell(enthalpy, i)  + "\\\\"
             tex_lines += "\n"
+        tex_lines += "\\hline\n"
         return(tex_lines)
 
     @staticmethod
@@ -233,9 +244,20 @@ class Analysis(object):
             if elem[1] == 1:
                 lines += elem[0]
             else:
-                lines += elem[0] + {True: "$_", False: ""}[tex] + \
-                         str(elem[1]) + {True: "$", False: ""}[tex]
+                lines += elem[0] + {True: "$_{", False: ""}[tex] + \
+                         str(int(elem[1])) + {True: "}$", False: ""}[tex]
         return lines
+
+    def set_cvm_enthalpy(self, fname='log.txt'):
+        """
+        CVMのlog.txtのreproduced_energyを取り込む
+        ToDo:log.txtから読めるようにする
+        """
+        with open(fname, 'r') as rfile:
+            lines = rfile.readlines()
+        rep_ene = {x.split()[0].split('*')[0][3:]: x.split()[2] for x in lines}
+        for data in self.data:
+            data.update({'cvm_enthalpy': float(rep_ene[data['str_id']])})
 
     @staticmethod
     def str_spg(spg, tex=False):
@@ -267,9 +289,9 @@ class Analysis(object):
             latt = {True: ["$a$=$b$=$c$={0:.3f}".format(lattice['a'])],
                     False: ["a=b=c={0:.3f}".format(lattice['a'])]}[tex]
         elif lattice['a'] == lattice['b']:
-            latt = {True: ["$a$=$b$ {0:.3f}".format(lattice['a']),
+            latt = {True: ["$a$=$b$={0:.3f}".format(lattice['a']),
                            "$c$={0:.3f}".format(lattice['c'])],
-                    False: ["a=b {0:.3f}".format(lattice['a']),
+                    False: ["a=b={0:.3f}".format(lattice['a']),
                             "c={0:.3f}".format(lattice['c'])]}[tex]
         else:
             latt = {True: ["$a$={0:.3f}".format(lattice['a']),
@@ -299,7 +321,7 @@ class Analysis(object):
             site = group['site_grp'][0]
             for sp, _ in site.species_and_occu.items():
                 line = str(sp)
-                line += " (" + str(len(group)) + ""
+                line += " (" + str(len(group['site_grp'])) + ""
                 line += group['wyckoffs'] + ") "
                 line += ("{0:.3f}".format(site.a)) + " "
                 line += ("{0:.3f}".format(site.b)) + " "

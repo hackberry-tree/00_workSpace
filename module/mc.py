@@ -4,13 +4,20 @@
 Cluster密度を計算
 """
 from __future__ import division
-import os
-import glob
+import numpy as np
+import math
 import random
-import argparse
+#import pyximport; pyximport.install(pyimport=True)
+from correlationfunction import Tetrahedron
 
-import itx
-import collect_vasp
+def main():
+    cell = CellFCC(10, mode='L10')
+    print('concentration')
+    print(cell.get_conc(1))
+    print('local xi at 0 0 0')
+    print(cell.get_tetra_xi([0, 0, 0], 0))
+    print('gloval xi')
+    print(cell.get_tetra_xi_glob())
 
 class QuadSite(object):
     """
@@ -19,18 +26,34 @@ class QuadSite(object):
     sites
     """
     def __init__(self, spins):
-        self.spins = CyclicList(spins)
+        self.spins = spins
         site0 = [0, 0, 0]
         site1 = [0, 1/2, 1/2]
         site2 = [1/2, 0, 1/2]
         site3 = [1/2, 1/2, 0]
-        self.sites = CyclicList([site0, site1, site2, site3])
+        self.sites = [site0, site1, site2, site3]
 
     @classmethod
     def random(cls, conc):
         spins = [int(2*round(random.uniform(conc/2., 0.5+conc/2.))-1)
                 for i in range(4)]
         return cls(spins)
+
+    @classmethod
+    def L10(cls, conc=0.5):
+        spins = [-1, -1, 1, 1]
+        return cls(spins)
+
+    @classmethod
+    def L12_A(cls, conc=3/4):
+        spins = [-1, 1, 1, 1]
+        return cls(spins)
+
+    @classmethod
+    def L12_B(cls, conc=1/4):
+        spins = [-1, -1, -1, 1]
+        return cls(spins)
+
 
     def __str__(self):
         return str(self.spins)
@@ -67,52 +90,88 @@ class CyclicList(list):
         return super(CyclicList, self).__setitem__(index, item)
 
 
-class Cell(object):
+class CellFCC(object):
     """
     周期境界条件を課した3次元のlist
     セルの大きさはsize^3
     QuadSiteのどのsiteを原点にするかをoriginで指定する
     """
-    def __init__(self, size, random=True, origin=0):
+    # 原点からみた最隣接原子の座標
+    NEAREST = [[0, 0, 0, 1], [0, 0, 0, 2], [0, -1, 0, 1], [-1, 0, 0, 2],
+               [0, 0, 0, 3], [0, -1, 0, 3], [-1, -1, 0, 3], [-1, 0, 0, 3],
+               [0, 0, -1, 1], [0, 0, -1, 2], [0, -1, -1, 1], [-1, 0, -1, 2]]
+    # memo 上記の実座標 簡単のため2倍して表記
+    COORDINATE_NEAREST = [[0, 1, 1], [1, 0, 1], [0, -1, 1], [-1, 0, 1],
+                          [1, 1, 0], [1, -1, 0], [-1, -1, 0], [-1, 1, 0],
+                          [0, 1, -1], [1, 0, -1], [0, -1, -1], [-1, 0, -1]]
+    # NEARESTを3つ選んで作る8つの四面体
+    TETRA_POS = [[0, 1, 4], [3, 0, 7], [2, 3, 6], [1, 2, 5],
+                 [8, 9, 4], [11, 8, 7], [10, 11, 6], [9 ,10, 5]]
+
+    # 原点から見た第二隣接原子の座標
+    NEXT_N = [[1, 0, 0], [-1, 0, 0],
+              [0, 1, 0], [0, -1, 0],
+              [0, 0, 1], [0, 0, -1]]
+    # 第二隣接一つと4つの最隣接からなる八面体
+    # OCTAの順番で第二隣接位置はNEXT_Nの順番と対応
+    # 例:OCTA[1]の第二隣接位置はNEXT_N[1](=[-1, 0, 0])
+    OCTA_POS = [[1, 9, 4, 5], [3, 11, 6, 7],
+                [0, 8, 4, 7], [2, 10, 5, 6],
+                [0, 2, 1, 3], [8, 10, 9, 11]]
+
+    def __init__(self, size, mode='random', origin=0):
         self.size = size
-        tet = QuadSite.random
-        self.cell = CyclicList(CyclicList(CyclicList(tet(0.5)
-                                                     for z in range(size))
-                                          for y in range(size))
-                               for x in range(size))
+        tet = {'random': QuadSite.random, 'L10': QuadSite.L10,
+               'L12_A': QuadSite.L12_A, 'L12_B': QuadSite.L12_B,}[mode]
+        self.cell = np.array([[[tet(0.5).spins for z in range(size)]
+                               for y in range(size)] for x in range(size)])
         self.origin = origin
 
-    def get_tetra_xi(self, coord):
+        self.TETRA = [[self.NEAREST[y] for y in x] for x in self.TETRA_POS]
+
+    def get_tetra_xi(self, coord, site_id=0):
         """
         座標周りの8つのtetragonalクラスターの相関関数を計算する
+        coordは(x, y, z)の三次元座標 site_idを別途指定する
         """
-        s0 = self[coord]
-        print(s0)
+        c = coord + [0]  # 末尾に0番を追加
+        spin0 = self.from_origin(c, site_id)
 
-        # s1 =
-        # s2
-        # s3
+        # coord周りのtetrahedronの座標
+        tetra = [[[x+y for x, y in zip(c, s)] for s in t] for t in self.TETRA]
+        # 四面体クラスターのspin * 8つ
+        spins = [[spin0] + self.get_arrange_spins(t, site_id) for t in tetra]
+        return Tetrahedron.average(spins)
 
-    def from_origin(self, site_id, *pos):
+    def get_tetra_xi_glob(self):
+        """
+        系内全域の相関関数をreturn
+        """
+        coords = [[x, y, z] for x in range(-1, self.size-1)
+                  for y in range(-1, self.size-1)
+                  for z in range(-1, self.size-1)]
+        site_ids = [0, 1, 2, 3]
+        xis = [self.get_tetra_xi(c, i) for c in coords for i in site_ids]
+        return [math.fsum(i)/len(i) for i in zip(*xis)]
+
+    def get_arrange_spins(self, pos_list, site_id=0):
+        """
+        pos_list中の各座標におけるspinを参照し、spin配列のlistとしてreturnする
+        site_idでどの原点から見た座標なのかを指定する
+        """
+        return [self.from_origin(x, site_id) for x in pos_list]
+
+    def from_origin(self, pos, site_id=0):
         """
         QuadSiteの原点を番号で指定
         その原点からの相対位置で各spinを参照する
+        スライスは使えない
+        QuadSiteごと組み替える必要があって原理的に難しい
         """
         trans = [self._orig0, self._orig1,
-                 self._orig2, self._orig3][site_id](pos[0])
-        rpos = [i + j for i, j in zip(pos[0], trans)]
+                 self._orig2, self._orig3][site_id](pos)
+        rpos = [i + j for i, j in zip(pos, trans)]
         return self[rpos]
-
-    def _from_origin(self, *pos):
-        """
-        QuadSiteの原点を番号で指定
-        その原点からの相対位置で各spinを参照する
-        """
-        trans = [self._orig0, self._orig1,
-                 self._orig2, self._orig3][self.origin](pos[0])
-        rpos = [i + j for i, j in zip(pos[0], trans)]
-        return rpos
-
 
     @staticmethod
     def _orig0(_):
@@ -127,7 +186,7 @@ class Cell(object):
         並進対称ベクトル site1を原点にした場合
         """
         trans = {0: [0, 0, 0, 1], 1: [0, 1, 1, -1],
-                 2:[0, 0, 1, 1], 3:[0, 1, 0, -1]}[pos[3]%4]
+                 2: [0, 0, 1, 1], 3: [0, 1, 0, -1]}[pos[3]%4]
         return trans
 
     @staticmethod
@@ -136,7 +195,7 @@ class Cell(object):
         並進対称ベクトル site2を原点にした場合
         """
         trans = {0: [0, 0, 0, 2], 1: [0, 0, 1, 2],
-                 2:[1, 0, 1, -2], 3:[1, 0, 0, -2]}[pos[3]%4]
+                 2: [1, 0, 1, -2], 3: [1, 0, 0, -2]}[pos[3]%4]
         return trans
 
     @staticmethod
@@ -145,14 +204,14 @@ class Cell(object):
         並進対称ベクトル site3を原点にした場合
         """
         trans = {0: [0, 0, 0, 3], 1: [0, 1, 0, 1],
-                 2:[1, 0, 0, -1], 3:[1, 1, 0, -3]}[pos[3]%4]
+                 2: [1, 0, 0, -1], 3: [1, 1, 0, -3]}[pos[3]%4]
         return trans
 
     def get_conc(self, i):
         """
         A元素の格子中の濃度を算出
         """
-        spin = [s for x in self.cell for y in x for z in y for s in z.spins]
+        spin = [s for x in self.cell for y in x for z in y for s in z]
         return spin.count(i) / len(spin)
 
     def slice_x(self, x):
@@ -180,26 +239,7 @@ class Cell(object):
         except IndexError:
             return self.cell[pos[0]][pos[1]][pos[2]]
 
-l = 10**5
-print(l)
-conc = 0
-j = []
-for i in range(l):
-    j.append(int(2*round(random.uniform(conc/2., 0.5+conc/2.))-1))
-print(j[0])
-print(j.count(1)/float(l))
-rand = QuadSite.random(0.5)
-print(rand)
+if __name__ == '__main__':
+    main()
 
-cell = Cell(24)
-print(cell.get_conc(1))
-print(cell[1,1,1,:] == cell[25,25,25,:])
-print(cell.from_origin(0, [1,1,1,1]))
-cell.get_tetra_xi([0,0,1])
 
-# test
-print(cell.from_origin(1, [0, 0, 0, 0]) == cell.from_origin(2, [-1, 0, 0, 3]))
-print(cell.from_origin(2, [0, 0, 0, 3]) == cell.from_origin(3, [0, 0, 0, 2]))
-print(cell.from_origin(3, [0, 0, 0, 1]) == cell.from_origin(0, [0, 1, 0, 2]))
-print(cell.from_origin(1, [1, 2, 3, 1]) == cell.from_origin(0, [1, 3, 4, 0]))
-print(cell.from_origin(2, [0, 0, 0, 0]) == cell.from_origin(0, [0, 0, 0, 2]))
