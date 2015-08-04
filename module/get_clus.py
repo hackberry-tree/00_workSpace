@@ -322,7 +322,7 @@ def fcc():
     n-2 は null と point を除いてあることに
     vertex-1 は 原点 [0, 0, 0, 0] を除いてあることに対応する
     """
-    path = os.path.join(TEST_PATH, "AlCu/wien/TO")
+    path = os.path.join(TEST_PATH, "AlCu/wien/
     # point 以上のクラスター修得
     print(path)
     # clus = from_file2(os.path.join(path, "log.txt"))

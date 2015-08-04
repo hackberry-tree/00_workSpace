@@ -4,41 +4,54 @@
 
 
 import os
-import glob
-import shutil
 import unittest
-# from benchmarker import Benchmarker
-from mc_int import *
-# import numpy as np
-# cimport numpy as np
+from benchmarker import Benchmarker
+from montecarlo import MonteCarlo, NaClXtal, FCCXtal
+import numpy as np
 
-__date__ = "Nov 17 2014"
+__date__ = "Aug 4 2015"
 
 TEST_PATH = ("/Users/enoki/Researches/Analysis/Codes/01_testRun/")
 
 
 def main():
+    """
+    Test
+    """
     unittest.main()
 
 
-class Test(unittest.TestCase):
+class Test(unittest.TestCase):  #pylint: disable=R0903
     """
-    テスト
+    Test
     """
     PATH = os.path.join(TEST_PATH, 'montecarlo/')
+
+    def test_get_entropy_TO(self):
+        """
+        de を記録して entropy を算出する
+        """
+        path = os.path.join(self.PATH, "AlCu/wien/TO")
+        fcc = FCCXtal.from_pickle_ecis(os.path.join(path, 'cluster.pickle'),
+                                       arrange='random', conc=0.25, size=30)
+        mc = MonteCarlo(fcc, T=10000)
+        mc.loop_fcc_micro_single(2000)
+
 
     def _test_flip_de(self):
         """
         flip de を total energy の変化量と比較
+        一致すれば O.K.
+        cell size が 2 以上ならうまくいく
+        それより小さい場合は direct にエネルギーを求めた方が良い
         """
         path = os.path.join(self.PATH, "AlCu/voldep/4.0/")
         fcc = FCCXtal.from_pickle_ecis(os.path.join(path, 'cluster.pickle'),
                                        arrange='random', conc=0.8, size=2)
 
-        # s = 0, s = 1 のサイトを無作為に抽出
+        # s=0, s=1 のサイトを無作為に抽出
         s0 = fcc.cell == 0
-        select_s0 = np.random.choice(
-            range((s0).sum()), 1, replace=False)
+        select_s0 = np.random.choice(range((s0).sum()), 1, replace=False)
         site_s0 = (np.array(np.where(s0)))[:, select_s0[0]]
 
         s1 = fcc.cell == 1
@@ -46,41 +59,37 @@ class Test(unittest.TestCase):
             range((s1).sum()), 1, replace=False)
         site_s1 = (np.array(np.where(s1)))[:, select_s1[0]]
 
-        print("before")
+        print("before energy")
         before = fcc.get_energy()
         print(before)
         pred_de = fcc.get_exchange_de_small(site_s0, site_s1)/fcc.size**3/4
         fcc.cell[tuple(site_s0.T)] = 1
         fcc.cell[tuple(site_s1.T)] = 0
         after = fcc.get_energy()
+        print("after energy")
         print(after)
         print("de")
         de = after - before
         print(de)
         print("Predict de")
         print(pred_de)
-        print((de - pred_de) ** 2 < 1e-6)
+        assert (de - pred_de) ** 2 < 1e-6
 
-    def test_mc_fcc_micoro_single(self):
+    def _test_mc_fcc_micoro_single(self):
         """
         loop_fcc_mciro_single の テスト
+        benchmarker で速度計測
         """
         # path = os.path.join(self.PATH, "AlCu/voldep/4.0/")
         path = os.path.join(self.PATH, "AlCu/wien/")
         fcc = FCCXtal.from_pickle_ecis(os.path.join(path, 'cluster.pickle'),
                                        arrange='random', conc=0.90, size=10)
-        fcc.from_pickle_cell(os.path.join(path, 'AlCu.pickle'))
+        print(len(fcc.ecis))
         mc = MonteCarlo(fcc, T=300)
-        mc.loop_fcc_micro_single(4000)
-        # mc.loop_fcc_micro_single(4000)
-
-        # with Benchmarker(width=20, loop=3) as bench:
-        #     @bench("simple")
-        #     def _(bm):
-        #         mc.loop_fcc_micro_single(10)
-
-        fcc.make_poscar(os.path.join(path, 'POSCAR'))
-        fcc.save_cell(os.path.join(path, 'AlCu'))
+        with Benchmarker(width=20, loop=3) as bench:
+            @bench("simple")
+            def _(bm): #pylint: disable=W0613,C0111
+                mc.loop_fcc_micro_single(10)
 
     def _test_gs(self):
         """
@@ -88,20 +97,6 @@ class Test(unittest.TestCase):
         エネルギーのみを出力
         """
         path = os.path.join(self.PATH, "AlCu/voldep/4.0/")
-        # while True:
-        #     rand = float(np.random.rand(1))
-        #     fcc = FCCXtal.from_pickle_ecis(os.path.join(path, 'cluster.pickle'),
-        #                                    arrange='random', conc=rand, size=1)
-        #     if fcc.get_conc() != 0.0 and fcc.get_conc() != 1.0:
-
-        #         mc = MonteCarlo(fcc, T=1000)
-        #         mc.loop_fcc_micro_single(500)
-        #         mc = MonteCarlo(fcc, T=100)
-        #         mc.loop_fcc_micro_single(1000)
-        #     line = "{0} {1}\n".format(fcc.get_conc(), fcc.get_energy())
-        #     with open(os.path.join(self.PATH, 'res.txt'), 'a') as wfile:
-        #         wfile.write(line)
-        #     rand = float(np.random.rand(1))
 
         fcc = FCCXtal.from_pickle_ecis(os.path.join(path, 'cluster.pickle'),
                                        arrange='random', conc=0.90, size=10)
@@ -117,6 +112,9 @@ class Test(unittest.TestCase):
         fcc.save_cell(os.path.join(path, 'AlCu'))
 
     def _test_AlCu_mc_grand(self):
+        """
+        グランドカノニカルの計算テスト
+        """
         fcc = FCCXtal.from_pickle_ecis(
             os.path.join(self.PATH, "cluster_AlCu_09.pickle"),
             arrange='random', conc=0.05, size=10)
@@ -130,11 +128,13 @@ class Test(unittest.TestCase):
         mc = MonteCarlo(fcc, T=0)
         mc.loop_fcc_grand(20)
 
-
         fcc.make_poscar(os.path.join(self.PATH, 'POSCAR'))
         fcc.save_cell(os.path.join(self.PATH, 'AlCu'))
 
     def _test_AlCu_mc_grand_TO(self):
+        """
+        グランドカノニカルの計算テスト TO 近似
+        """
         fcc = FCCXtal.from_pickle_ecis(
             os.path.join(self.PATH, "cluster_AlCu_TO.pickle"),
             arrange='random', conc=0.6, size=30)
@@ -142,36 +142,13 @@ class Test(unittest.TestCase):
         mc = MonteCarlo(fcc, T=1000)
         mc.loop_fcc_grand(100)
 
-
         fcc.make_poscar(os.path.join(self.PATH, 'POSCAR'))
         fcc.save_cell(os.path.join(self.PATH, 'AlCu'))
-
-    def _test_AlCu_mc_micro(self):
-        path = os.path.join(self.PATH, "AlCu/voldep/4.0/")
-        fcc = FCCXtal.from_pickle_ecis(os.path.join(path, 'cluster.pickle'),
-                                       arrange='L12_A', conc=0.25, size=2)
-        print(fcc.ecis)
-        # fcc.ecis[0] = 0
-        # fcc.ecis[1] = - 4000
-        # fcc.ecis[10] = - 3000
-        # fcc.from_pickle_cell(os.path.join(path, 'AlCu.pickle'))
-        mc = MonteCarlo(fcc, T=0)
-        mc.loop_fcc_micro(1)
-        print(np.array(fcc.idxs[0]).shape)
-        print(fcc.get_conc())
-        # for i in range(100):
-        #     mc.loop_fcc_micro(1)
-        #     fcc.make_xdatcar(os.path.join(self.PATH, 'AlCu/tetra_2R2N/XDATCAR'))
-        # mc.loop_fcc_grand(50)
-        # mc.loop_fcc_micro_prio_de(25)
-        # mc.loop_fcc_micro(100)
-
-        fcc.make_poscar(os.path.join(path, 'POSCAR'))
-        fcc.save_cell(os.path.join(path, 'AlCu'))
 
     def _test_flip_de_AlCutetra(self):
         """
         flip de を total energy の変化量と比較
+        single サイト
         """
         fcc = FCCXtal.from_pickle_ecis(
             os.path.join(self.PATH, "AlCu/tetra_stress30/cluster.pickle"),
@@ -181,13 +158,15 @@ class Test(unittest.TestCase):
         fcc.cell[2, 2, 1, 0] = 0
         fcc.cell[1, 2, 1, 0] = 0
 
-        fcc.cell[2, 2, 1, 3] = 0
-        # fcc.cell[1, 2, 1, 2] = 0
+        pred_de = fcc.get_flip_de()[2, 2, 1, 3]/fcc.size**3/4
+
         print("before")
         before = fcc.get_energy()
         print(before)
 
-        pred_de = fcc.get_flip_de()[2, 2, 1, 3]/fcc.size**3/4
+        fcc.cell[2, 2, 1, 3] = 0
+        # fcc.cell[1, 2, 1, 2] = 0
+
 
         print((fcc.get_flip_de() == np.min(fcc.get_flip_de())).sum())
         after = fcc.get_energy()
@@ -198,60 +177,27 @@ class Test(unittest.TestCase):
         print("Predict de")
         print(pred_de)
         print((de - pred_de) ** 2 < 1e-6)
-        fcc.make_poscar(os.path.join(self.PATH, 'POSCAR'))
 
-    def _test_order_AlCu_tetra(self):
-        fcc = FCCXtal.from_pickle_ecis(
-            os.path.join(self.PATH, "AlCu/tetra_2R2N/cluster.pickle"),
-            arrange='L10', size=2)
-        print("L10 -95.7538")
-        print(fcc.get_energy())
-        print()
-
-    def _test_order_AlCu(self):
-        path = os.path.join(self.PATH, "AlCu/voldep/4.0/")
+    def _test_order_AlCu_TO(self):
+        """
+        規則相のエネルギーを icvm と比較
+        null clucter は含まれていないので注意
+        """
+        path = os.path.join(self.PATH, "AlCu/wien/TO")
         fcc = FCCXtal.from_pickle_ecis(os.path.join(path, 'cluster.pickle'),
-                                       arrange='L12_A', conc=0.75, size=2)
+                                       arrange='L12_A', size=10)
+        print("L12_A3B: -40.7461")
         print(fcc.get_energy())
-        print(fcc.get_conc())
+
         fcc = FCCXtal.from_pickle_ecis(os.path.join(path, 'cluster.pickle'),
-                                       arrange='FCC_A', conc=0.75, size=2)
-        fcc.cell[:, :, 0, 0] = 0
-        fcc.cell[:, :, 0, 3] = 0
-        print(fcc.get_conc())
+                                       arrange='L10', size=10)
+        print("L10_AB -148.668")
         print(fcc.get_energy())
-        fcc.make_poscar(os.path.join(path, 'POSCAR'))
 
-
-        path = os.path.join(self.PATH, "AlCu/voldep/4.0/")
         fcc = FCCXtal.from_pickle_ecis(os.path.join(path, 'cluster.pickle'),
-                                       arrange='L10', conc=0.75, size=5)
+                                       arrange='L12_B', size=10)
+        print("L12_AB3 -183.749")
         print(fcc.get_energy())
-        print(fcc.get_conc())
-
-        return
-
-
-        fcc = FCCXtal.from_pickle_ecis(
-            os.path.join(self.PATH, "cluster_AlCu.pickle"),
-            arrange='L10', size=2)
-        print("L10 -147.160")
-        print(fcc.get_energy())
-        print()
-
-        fcc = FCCXtal.from_pickle_ecis(
-            os.path.join(self.PATH, "cluster_AlCu.pickle"),
-            arrange='L12_A', size=2)
-        print("L12_A -33.9550")
-        print(fcc.get_energy())
-        print()
-
-        fcc = FCCXtal.from_pickle_ecis(
-            os.path.join(self.PATH, "cluster_AlCu.pickle"),
-            arrange='L12_B', size=2)
-        print("L12_B -178.398")
-        print(fcc.get_energy())
-        print()
 
     def _test4(self):
         nacl = NaClXtal.from_pickle_ecis(

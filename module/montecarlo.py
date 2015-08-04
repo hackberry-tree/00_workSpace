@@ -138,23 +138,26 @@ class MonteCarlo(object):
         # 03 spin の交換処理
 
         """
-        print("initial concentration")
-        print(self.cell.get_conc())
-        print("initial energy")
-        total_e = self.cell.get_energy()
-        print(total_e)
-        print("start")
+        # print("initial concentration")
+        # print(self.cell.get_conc())
+        # print("initial energy")
+        # total_e = self.cell.get_energy()
+        # print(total_e)
+        # print("start")
 
         # 01
         select_pair_sites = self.__select_pair_sites()
-        size = self.cell.size**3*4
-        total_e *= size
+        # size = self.cell.size**3*4
+        delta_e = 0
+        size = self.cell.size ** 3 * 4
+        # initial = self.cell.get_energy()
         for _ in range(steps):
             # 01
             site_s0, site_s1 = select_pair_sites()
             # 02
             de = func(site_s0, site_s1)
             p = float(self.trans_prob(de))
+            # print(p)
             rand = float(np.random.rand(1))
             s = {False: [0, 1], True: [1, 0]}[rand < p]
 
@@ -162,19 +165,17 @@ class MonteCarlo(object):
             self.cell.cell[tuple(site_s0.T)] = s[0]
             self.cell.cell[tuple(site_s1.T)] = s[1]
             out_de = {False: 0, True: de}[rand < p]
-            total_e += out_de
-        total_e /= size
-        print("final energy")
-        print(total_e)
-        final = self.cell.get_energy()
-        if not final == total_e:
-            print(final - total_e)
+            delta_e += out_de
+        return delta_e
+        # print(delta_e/size)
+        # final = self.cell.get_energy()
+        # print(final - initial)
 
     def loop_fcc_micro_single(self, steps):
         """
         normal size の cell 用
         """
-        self.__loop_fcc_micro_single(steps, self.cell.get_exchange_de)
+        return self.__loop_fcc_micro_single(steps, self.cell.get_exchange_de)
 
     def loop_fcc_micro_single_small(self, steps):
         """
