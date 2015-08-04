@@ -42,8 +42,10 @@ num_elem=$#
 
 if [ $num_elem = 2 ]; then
    echo ""
-   echo "input structure numbers from fit.out "
-   str_num_list=`cut -d " " -f 6 fit.out`
+   # echo "input structure numbers from fit.out "
+   # str_num_list=`cut -d " " -f 6 fit.out`
+   echo "input structure numbers from exist */energy "
+   str_num_list=`find */energy | sed "s/\/energy//g"`
    echo $str_num_list
 else
    column_list=`expr $num_elem + 5`

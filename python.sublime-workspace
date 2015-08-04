@@ -4,6 +4,138 @@
 		"selected_items":
 		[
 			[
+				"Al",
+				"Al140Fe60"
+			],
+			[
+				"get_e",
+				"get_exchange_de"
+			],
+			[
+				"__l",
+				"__loop_fcc_micro_single"
+			],
+			[
+				"0",
+				"0.9"
+			],
+			[
+				"get_en",
+				"get_entropy_gas"
+			],
+			[
+				"get",
+				"get_vdos_solid〔function〕"
+			],
+			[
+				"fli",
+				"flipped_o1"
+			],
+			[
+				"_iter",
+				"_iterationTO_reserved_atoms"
+			],
+			[
+				"Fac",
+				"FaceCenterTetragonal"
+			],
+			[
+				"Fa",
+				"FaceCenterTetragonal"
+			],
+			[
+				"_idx_tri",
+				"_idx_tri2R2"
+			],
+			[
+				"pri",
+				"print_matrix  (function)"
+			],
+			[
+				"_idx_tr",
+				"_idx_triR1"
+			],
+			[
+				"2Rの",
+				"2Rのpairになるよう再配列したspin"
+			],
+			[
+				"Face",
+				"FaceCenterCubic"
+			],
+			[
+				"ite",
+				"iteration"
+			],
+			[
+				"tra",
+				"transition_probability"
+			],
+			[
+				"C",
+				"CLUSTERS"
+			],
+			[
+				"get_",
+				"get_spacegroup_number"
+			],
+			[
+				"S",
+				"SpinOperator"
+			],
+			[
+				"M",
+				"MakePattern"
+			],
+			[
+				"one",
+				"one"
+			],
+			[
+				"sites_",
+				"sites_and_wycoffs"
+			],
+			[
+				"In",
+				"IndexError  (class)"
+			],
+			[
+				"get_space",
+				"get_spacegroup_number"
+			],
+			[
+				"get_spa",
+				"get_spacegroup_symbol"
+			],
+			[
+				"plot_",
+				"plot_mae_cova_02"
+			],
+			[
+				"Mur",
+				"MurnaghanFit"
+			],
+			[
+				"resu",
+				"results1_POSCARS_Fe_only"
+			],
+			[
+				"fittin",
+				"fitting_params"
+			],
+			[
+				"Mu",
+				"MurnaghanEoS"
+			],
+			[
+				"helm",
+				"helmholtz-volume"
+			],
+			[
+				"Gibb",
+				"GibbsWithComp"
+			],
+			[
 				"unit",
 				"unit_cell_formula"
 			],
@@ -64,23 +196,52 @@
 	"buffers":
 	[
 		{
-			"file": "module/ipymatgen.py",
+			"file": "test/test_band.py",
 			"settings":
 			{
-				"buffer_size": 2559,
+				"buffer_size": 10546,
+				"line_ending": "Unix"
+			}
+		},
+		{
+			"file": "module/solid.py",
+			"settings":
+			{
+				"buffer_size": 8323,
+				"line_ending": "Unix"
+			}
+		},
+		{
+			"file": "bin/vasp_collect.py",
+			"settings":
+			{
+				"buffer_size": 6520,
 				"line_ending": "Unix"
 			}
 		}
 	],
 	"build_system": "Packages/Python/Python.sublime-build",
+	"build_system_choices":
+	[
+	],
+	"build_varint": "",
 	"command_palette":
 	{
 		"height": 375.0,
+		"last_filter": "",
 		"selected_items":
 		[
 			[
+				"inst",
+				"Package Control: Install Package"
+			],
+			[
 				"pa",
-				"Package Control: List Packages"
+				"Package Control: Disable Package"
+			],
+			[
+				"pack",
+				"Package Control: Disable Package"
 			],
 			[
 				"p",
@@ -99,10 +260,6 @@
 				"Package Control: Remove Package"
 			],
 			[
-				"inst",
-				"Package Control: Install Package"
-			],
-			[
 				"instal",
 				"Package Control: Install Package"
 			],
@@ -117,10 +274,6 @@
 			[
 				"remov",
 				"Package Control: Remove Package"
-			],
-			[
-				"pack",
-				"Package Control: Install Package"
 			],
 			[
 				"pyl",
@@ -147,7 +300,7 @@
 				"Package Control: List Packages"
 			]
 		],
-		"width": 588.0
+		"width": 435.0
 	},
 	"console":
 	{
@@ -169,136 +322,147 @@
 		"side_bar_visible": false,
 		"status_bar_visible": false
 	},
+	"expanded_folders":
+	[
+		"/Users/enoki/Researches/Analysis/Codes/00_workSpace",
+		"/Users/enoki/Researches/Analysis/Codes/00_workSpace/bin",
+		"/Users/enoki/Researches/Analysis/Codes/00_workSpace/module",
+		"/Users/enoki/Researches/Analysis/Codes/00_workSpace/test",
+		"/Users/enoki/Researches/Analysis/Codes/01_testRun",
+		"/Users/enoki/Researches/Analysis/Codes/01_testRun/icvm",
+		"/Users/enoki/Researches/Analysis/Codes/01_testRun/icvm/str",
+		"/Users/enoki/Researches/Analysis/Codes/01_testRun/igor"
+	],
 	"file_history":
 	[
-		"/Users/enoki/Library/Application Support/Sublime Text 3/Packages/User/Pylinter.sublime-settings",
-		"/Users/enoki/Documents/01_ResearchData/Calculations/99_python/00_workSpace/python.sublime-project",
-		"/Users/enoki/Library/Application Support/Sublime Text 3/Packages/Pylinter/Pylinter.sublime-settings",
-		"/Users/enoki/Documents/01_ResearchData/Calculations/99_python/00_workSpace/bin/custodian_relax.py",
-		"/Users/enoki/Documents/01_ResearchData/Calculations/99_python/00_workSpace/module/convex_hull.py",
-		"/Users/enoki/Documents/01_ResearchData/Calculations/99_python/00_workSpace/test/test_uspex.py",
+		"/Users/enoki/Researches/Analysis/Codes/00_workSpace/module/get_clus.py",
+		"/Users/enoki/Researches/Analysis/Codes/00_workSpace/module/parse_icvm_str.py",
+		"/Users/enoki/Researches/Analysis/Codes/00_workSpace/bin/vasp_collect.py",
+		"/Users/enoki/Researches/Analysis/Codes/00_workSpace/module/solid.py",
+		"/Users/enoki/Researches/Analysis/Codes/00_workSpace/bin/vasp_combi.py",
+		"/Users/enoki/Researches/Analysis/Codes/00_workSpace/test/test_mc_int.py",
+		"/Users/enoki/Researches/Analysis/Codes/00_workSpace/module/convex_hull.py",
+		"/Users/enoki/Researches/Analysis/Codes/00_workSpace/test/test_uspex.py",
+		"/Users/enoki/Researches/Analysis/Codes/00_workSpace/test/test_vdos.py",
+		"/Users/enoki/Researches/Analysis/Codes/00_workSpace/bin/vasp_voldep.py",
+		"/Users/enoki/Desktop/data/index.html",
+		"/Users/enoki/Researches/Analysis/Codes/00_workSpace/module/collect_vasp.py",
+		"/Users/enoki/Researches/Analysis/Codes/00_workSpace/module/mc_int.py",
+		"/Users/enoki/Researches/Analysis/Codes/00_workSpace/python.sublime-workspace",
+		"/Users/enoki/Researches/Analysis/Codes/00_workSpace/module/uspex.py",
+		"/Users/enoki/Researches/Analysis/Codes/00_workSpace/module/vdos.py",
+		"/Users/enoki/Researches/Analysis/Codes/01_testRun/uspex/origin/origin.eps",
+		"/Users/enoki/Researches/Analysis/Codes/00_workSpace/module/liquid2phase.py",
+		"/Users/enoki/Researches/Analysis/Codes/00_workSpace/bin/vasp_poscar.py",
+		"/Users/enoki/Researches/Analysis/Codes/00_workSpace/bin/mc_run.py",
+		"/Users/enoki/Researches/Analysis/Codes/00_workSpace/test/test.py",
+		"/Users/enoki/Researches/Analysis/Codes/00_workSpace/bin/rm_checkrx.py",
+		"/Users/enoki/Researches/Analysis/Codes/00_workSpace/module/parse_phonopy.py",
+		"/Users/enoki/Researches/Analysis/Codes/00_workSpace/module/commopy.py",
+		"/Users/enoki/Researches/Analysis/Codes/00_workSpace/bin/xdatcar.py",
 		"/Users/enoki/Library/Application Support/Sublime Text 3/Packages/User/Preferences.sublime-settings",
-		"/Users/enoki/Documents/01_ResearchData/Calculations/99_python/00_workSpace/module/mycustodian.py",
-		"/Users/enoki/Documents/01_ResearchData/Calculations/99_python/00_workSpace/bin/batch_run.py",
-		"/Users/enoki/Documents/01_ResearchData/Calculations/99_python/00_workSpace/module/batch_run_forimr.py",
-		"/Users/enoki/Documents/01_ResearchData/Calculations/99_python/00_workSpace/module/ipymatgen.py",
-		"/Users/enoki/Documents/01_ResearchData/Calculations/99_python/00_workSpace/module/fix_no_member.py",
-		"/Users/enoki/Documents/01_ResearchData/Calculations/99_python/00_workSpace/module/vaspy.py",
-		"/Users/enoki/Library/Application Support/Sublime Text 3/Packages/GitGutter/GitGutter.sublime-settings",
-		"/Users/enoki/Library/Application Support/Sublime Text 3/Packages/User/GitGutter.sublime-settings",
-		"/Users/enoki/Library/Application Support/Sublime Text 3/Packages/Default/Preferences.sublime-settings",
-		"/Users/enoki/Documents/01_ResearchData/Calculations/99_python/00_workSpace/bin/next.py",
-		"/Users/enoki/Documents/01_ResearchData/Calculations/99_python/00_workSpace/bin/make_list_run.py",
-		"/Users/enoki/Documents/01_ResearchData/Calculations/99_python/00_workSpace/module/mymatgen/io/vaspio_set.py",
-		"/Users/enoki/Desktop/test.py",
-		"/Users/enoki/Documents/01_ResearchData/Calculations/99_python/00_workSpace/module/mymatgen/phasediagram/entries.py",
-		"/Users/enoki/Documents/01_ResearchData/Calculations/99_python/00_workSpace/module/mymatgen/util/coord_utils.py",
-		"/Users/enoki/Documents/01_ResearchData/Calculations/99_python/00_workSpace/module/vaspio.py",
-		"/Users/enoki/Documents/01_ResearchData/Calculations/99_python/00_workSpace/test/test.py",
-		"/Users/enoki/Documents/01_ResearchData/Calculations/99_python/00_workSpace/module/uspex.py",
-		"/Library/Python/2.7/site-packages/pymatgen/__init__.py",
-		"/Users/enoki/Documents/01_ResearchData/Calculations/99_python/00_workSpace/module/mymatgen/__init__.py",
-		"/Users/enoki/Documents/01_ResearchData/Calculations/99_python/00_workSpace/module/json_coders.py",
-		"/Users/enoki/Documents/01_ResearchData/Calculations/01_VASP/15_convex_hull/_plot_FeNiSi_fromUSPEX.py",
+		"/Users/enoki/Researches/Analysis/Codes/00_workSpace/bin/mc_run_int.py",
+		"/Users/enoki/Researches/Analysis/Codes/00_workSpace/untitled.py",
+		"/Users/enoki/Researches/Analysis/Codes/00_workSpace/module/parse_atat.py",
+		"/Users/enoki/Researches/Analysis/Codes/00_workSpace/bin/stress.py",
+		"/Users/enoki/Researches/Analysis/Codes/00_workSpace/test/test_convex.py",
+		"/Users/enoki/Desktop/stress.out",
+		"/Users/enoki/Researches/Analysis/Codes/00_workSpace/module/mc.py",
+		"/Users/enoki/Researches/Analysis/Codes/00_workSpace/bin/batch_run.py",
+		"/Users/enoki/Researchs/Analysis/Python/00_workSpace/module/liquid2phase.py",
+		"/Users/enoki/Library/Application Support/Sublime Text 3/Packages/Pylinter/Pylinter.sublime-settings",
+		"/Users/enoki/Al-Cu_statr_from_tet/00_get_tex.py",
+		"/Users/enoki/Desktop/VDOS.txt",
+		"/Users/enoki/Documents/01_ResearchData/Calculations/99_python/00_workSpace/test/test_2PTmodel.py",
+		"/Users/enoki/Documents/01_ResearchData/Calculations/99_python/00_workSpace/test/test_integral.py",
 		"/Users/enoki/Documents/01_ResearchData/Calculations/99_python/00_workSpace/module/commopy.py",
-		"/Users/enoki/Documents/01_ResearchData/Calculations/01_VASP/15_convex_hull/000_plot_Fe-Ni-Si.py",
-		"/Users/enoki/Documents/01_ResearchData/Calculations/01_VASP/15_convex_hull/001_plot_Fe-Ni-Si_fromUSPEX.py",
-		"/Users/enoki/Documents/01_ResearchData/Calculations/01_VASP/15_convex_hull/Fe-Ni-Si.py",
-		"/System/Library/Frameworks/Python.framework/Versions/2.7/Extras/lib/python/scipy/optimize/optimize.py",
-		"/System/Library/Frameworks/Python.framework/Versions/2.7/Extras/lib/python/scipy/optimize/__init__.py",
-		"/Users/enoki/Documents/01_ResearchData/Calculations/99_python/00_workSpace/module/fitting_analysis.py",
-		"/Users/enoki/Documents/01_ResearchData/Calculations/99_python/00_workSpace/module/table.py",
-		"/Users/enoki/Documents/01_ResearchData/Calculations/99_python/00_workSpace/module/vaspy_alternative.py",
-		"/Users/enoki/Documents/01_ResearchData/Calculations/99_python/00_workSpace/module/series_vasp.py",
-		"/Users/enoki/Documents/01_ResearchData/Calculations/99_python/00_workSpace/bin/vasp_voldep.py",
-		"/Users/enoki/Documents/01_ResearchData/Calculations/99_python/00_workSpace/bin/calc_murnaghan.py",
-		"/Users/enoki/Documents/01_ResearchData/Calculations/99_python/00_workSpace/bin/clearFiles.sh",
-		"/Users/enoki/Documents/01_ResearchData/Calculations/99_python/00_workSpace/bin/mpposcars.py",
-		"/Users/enoki/Documents/01_ResearchData/Calculations/99_python/00_workSpace/bin/vasp_unfold.py",
-		"/Users/enoki/Documents/01_ResearchData/Calculations/99_python/00_workSpace/module/drawBand.py",
-		"/Users/enoki/Documents/01_ResearchData/Calculations/99_python/00_workSpace/module/sprkkr.py",
-		"/Users/enoki/Documents/01_ResearchData/Calculations/05_USPEX/04_Fe-Ni-Si/plot_aux.py",
-		"/Users/enoki/Documents/01_ResearchData/Calculations/99_python/00_workSpace/test/text_convex.py",
-		"/Users/enoki/Documents/01_ResearchData/Calculations/99_python/00_workSpace/module/grapy.py",
-		"/Users/enoki/Documents/01_ResearchData/Calculations/99_python/00_workSpace/test/test_akaikkr",
-		"/Users/enoki/Documents/01_ResearchData/Calculations/99_python/00_workSpace/module/collect_vasp.py",
-		"/Users/enoki/Documents/01_ResearchData/Calculations/99_python/00_workSpace/bin/get_POSCAR.py",
-		"/Users/enoki/Documents/01_ResearchData/Calculations/99_python/00_workSpace/module/collect_akaikkr.py",
-		"/Users/enoki/Documents/01_ResearchData/Calculations/06_AKAI-KKR/00_check/k-dep/exe_collect_vaps.py",
-		"/Users/enoki/Documents/01_ResearchData/Calculations/99_python/00_workSpace/module/makeSeries.py",
-		"/Users/enoki/Documents/01_ResearchData/Calculations/99_python/00_workSpace/bin/table_vasp_voldep.py",
-		"/Users/enoki/Documents/01_ResearchData/Calculations/99_python/00_workSpace/test/test_collect_vasp_combi.py",
-		"/Users/enoki/Documents/01_ResearchData/Calculations/99_python/00_workSpace/test/test_band.py",
-		"/Users/enoki/Documents/01_ResearchData/Calculations/99_python/00_workSpace/bin/vasp_get_mae.py",
-		"/Users/enoki/Documents/01_ResearchData/Calculations/99_python/00_workSpace/bin/vasp_collect.py",
-		"/Users/enoki/Documents/01_ResearchData/Calculations/99_python/00_workSpace/sorce/originalsVASP/Calc/soc.sh",
-		"/Users/enoki/Documents/01_ResearchData/Calculations/99_python/00_workSpace/test/test_vaspy.py",
-		"/Users/enoki/Documents/01_ResearchData/Calculations/99_python/01_testRun/Fe-Ni-Si/1002692/OUTCAR",
-		"/Users/enoki/Documents/01_ResearchData/Calculations/99_python/00_workSpace/module/prepAkaiInputs.py",
-		"/Users/enoki/Documents/01_ResearchData/Calculations/01_VASP/15_convex_hull/convex.py",
-		"/Users/enoki/Documents/01_ResearchData/Calculations/99_python/00_workSpace/module/cifpy.py",
-		"/Users/enoki/Documents/01_ResearchData/Calculations/99_python/01_testRun/vaspy/outcar/OUTCAR",
-		"/Users/enoki/Library/Application Support/Sublime Text 3/Packages/Pylinter/Default (OSX).sublime-keymap",
-		"/Users/enoki/Library/Application Support/Sublime Text 3/Packages/User/Default (OSX).sublime-keymap",
-		"/Users/enoki/Documents/01_ResearchData/Calculations/99_python/01_testRun/uspex/poscar/EA1077/POSCAR",
-		"/Users/enoki/Documents/01_ResearchData/Calculations/99_python/00_workSpace/bin/vasp_alt_inpfile.py",
-		"/Users/enoki/Documents/01_ResearchData/Calculations/99_python/00_workSpace/bin/uspex_extendPOSCARS.py",
-		"/Users/enoki/Documents/01_ResearchData/Calculations/99_python/01_testRun/prepVaspInputs/prepInputs/INCAR_band",
-		"/Users/enoki/Documents/01_ResearchData/Calculations/99_python/01_testRun/prepVaspInputs/prepInputs/check_soc001",
-		"/Users/enoki/Documents/01_ResearchData/Calculations/99_python/00_workSpace/bin/spr_conc.py",
-		"/Users/enoki/Documents/01_ResearchData/Calculations/99_python/01_testRun/uspex/poscar/extended_convex_hull_POSCARS",
-		"/Users/enoki/Documents/01_ResearchData/Calculations/99_python/01_testRun/uspex/poscar/EA68/POSCAR",
-		"/Users/enoki/Documents/01_ResearchData/Calculations/99_python/01_testRun/uspex/poscar/BESTgatheredPOSCARS",
-		"/Users/enoki/Documents/01_ResearchData/Calculations/99_python/01_testRun/prepVaspInputs/series_vasp/POSCAR",
-		"/Users/enoki/Documents/01_ResearchData/Calculations/99_python/01_testRun/prepVaspInputs/prepInputs/check_band",
-		"/Users/enoki/Documents/01_ResearchData/Calculations/99_python/00_workSpace/test/test_series_vasp.py",
-		"/Users/enoki/Documents/01_ResearchData/Calculations/99_python/01_testRun/band/data/PROCAR_band",
-		"/Users/enoki/Documents/01_ResearchData/Calculations/99_python/01_testRun/band/data_soc/band_001",
-		"/Users/enoki/Documents/01_ResearchData/Calculations/99_python/00_workSpace/module/DOS.py",
-		"/Users/enoki/Documents/01_ResearchData/Calculations/99_python/01_testRun/band/PROCAR_band",
-		"/Users/enoki/Documents/01_ResearchData/Calculations/99_python/00_workSpace/test/test_grapy.py",
-		"/Users/enoki/Documents/01_ResearchData/Calculations/99_python/00_workSpace/test/test_sprkkr",
-		"/Users/enoki/Documents/01_ResearchData/Calculations/99_python/00_workSpace/bin/vasp_kprx.py",
-		"/Users/enoki/Documents/01_ResearchData/Calculations/99_python/00_workSpace/test/grapy.py",
-		"/Users/enoki/Documents/01_ResearchData/Calculations/99_python/00_workSpace/test/.test_collect_vasp_combi.py.swp",
-		"/Users/enoki/Library/Application Support/Sublime Text 3/Packages/User/Python27.sublime-build",
-		"/Users/enoki/Downloads/AdobeFlashPlayerInstaller_13au_ltrosxd_aaa_aih.dmg",
-		"/Users/enoki/Documents/01_ResearchData/Calculations/99_python/00_workSpace/module/*.py",
-		"/Users/enoki/Documents/01_ResearchData/Calculations/99_python/00_workSpace/**/test.py",
-		"/Users/enoki/Documents/01_ResearchData/Calculations/99_python/00_workSpace/module/cifpy.\\*",
-		"/Users/enoki/Documents/01_ResearchData/Calculations/99_python/00_workSpace/module/cifpy.*",
-		"/Users/enoki/Documents/01_ResearchData/Calculations/99_python/00_workSpace/test/test.p*",
-		"/Users/enoki/Documents/01_ResearchData/Calculations/99_python/00_workSpace/*/test.py",
-		"/Users/enoki/Documents/01_ResearchData/Calculations/99_python/00_workSpace/test/*test.",
-		"/Users/enoki/Documents/01_ResearchData/Calculations/99_python/00_workSpace/module/**/test.py",
-		"/Users/enoki/Documents/01_ResearchData/Calculations/99_python/00_workSpace/module/**/tes*",
-		"/Users/enoki/Library/Application Support/Sublime Text 3/Packages/AutoPEP8/AutoPep8.sublime-settings",
-		"/Users/enoki/Library/Application Support/Sublime Text 3/Packages/AutoPEP8/Default (OSX).sublime-keymap",
-		"/Users/enoki/Documents/01_ResearchData/Calculations/99_python/00_workSpace/test/re_check.py",
-		"/Users/enoki/Documents/01_ResearchData/Calculations/99_python/00_workSpace/test/test_space.py",
-		"/Users/enoki/Documents/01_ResearchData/Calculations/99_python/00_workSpace/bin/dropbox",
-		"/Users/enoki/Documents/01_ResearchData/Calculations/99_python/01_testRun/prepVaspInputs/series_vasp/incar_tag/encut_100/INCAR_cell",
-		"/Users/enoki/Library/Application Support/Sublime Text 3/Packages/Default/Default (OSX).sublime-keymap",
+		"/Users/enoki/Al-Cu_statr_from_tet/untitled",
+		"/Users/enoki/Documents/01_ResearchData/Calculations/99_python/00_workSpace/test/test_pymatgen.py",
+		"/Users/enoki/Documents/01_ResearchData/Calculations/99_python/00_workSpace/test/POSCAR",
+		"/Users/enoki/Documents/01_ResearchData/Calculations/99_python/02_checkio/PawnBrotherhood.py",
+		"/Users/enoki/Documents/01_ResearchData/Calculations/99_python/00_workSpace/module/mc_fct.py",
+		"/Users/enoki/Documents/01_ResearchData/Calculations/99_python/00_workSpace/test/test_mc.py",
+		"/Users/enoki/Documents/01_ResearchData/Calculations/99_python/00_workSpace/test/test_mc_fct.py",
+		"/Users/enoki/Documents/01_ResearchData/Calculations/01_VASP/14_Fe12M4X2/combi_ene/table.py",
+		"/Users/enoki/Documents/01_ResearchData/Calculations/99_python/00_workSpace/bin/mc_run_tet.py",
+		"/Users/enoki/Documents/01_ResearchData/Calculations/99_python/00_workSpace/bin/mc_run.py",
+		"/Users/enoki/Documents/01_ResearchData/Calculations/99_python/00_workSpace/module/mc.py",
+		"/Users/enoki/T125_1",
+		"/Users/enoki/Documents/01_ResearchData/Calculations/99_python/00_workSpace/test/test.py",
+		"/Users/enoki/Documents/01_ResearchData/Calculations/99_python/00_workSpace/module/correlationfunction.py",
+		"/Users/enoki/Documents/01_ResearchData/Calculations/99_python/00_workSpace/test/test_numpy.py",
+		"/Users/enoki/Documents/01_ResearchData/Calculations/99_python/00_workSpace/bin/vasp_cova.py",
+		"/Users/enoki/T150_29",
+		"/Users/enoki/T125_29",
+		"/Users/enoki/T40_29",
+		"/Users/enoki/Documents/01_ResearchData/Calculations/04_CVM/06_Al-Cu/mc_enoki/POSCAR",
+		"/Users/enoki/Documents/01_ResearchData/Calculations/99_python/02_checkio/SpeechModule.py",
+		"/Users/enoki/Documents/01_ResearchData/Calculations/99_python/02_checkio/FlattenDict.py",
+		"/Users/enoki/Documents/01_ResearchData/Calculations/99_python/02_checkio/FizzBuzz.py",
+		"/Users/enoki/Library/Application Support/Sublime Text 3/Packages/Diffy/Diffy.sublime-settings",
+		"/Users/enoki/Documents/01_ResearchData/Calculations/99_python/00_workSpace/module/ipymatgen.py",
+		"/Users/enoki/Documents/01_ResearchData/Calculations/99_python/01_testRun/prepVaspInputs/convIncSoc/INCAR_presoc_nc",
 		"/Users/enoki/Documents/01_ResearchData/Calculations/99_python/01_testRun/combi_data/elem_BFeAl3/INCAR_soc001",
-		"/Users/enoki/Documents/01_ResearchData/Calculations/99_python/00_workSpace/sorce/originalsAKAI/input",
-		"/Users/enoki/Documents/01_ResearchData/Calculations/99_python/01_testRun/prepVaspInputs/series_vasp/incar_tag/encut_200/Calc/cell.sh",
-		"/Users/enoki/Documents/01_ResearchData/Calculations/99_python/01_testRun/prepVaspInputs/series_vasp/incar_tag/encut_100/Calc/cell.sh",
-		"/Users/enoki/Documents/01_ResearchData/Calculations/99_python/01_testRun/prepVaspInputs/series_vasp/incar_tag/encut_200/INCAR_cell",
-		"/Users/enoki/Documents/01_ResearchData/Calculations/99_python/01_testRun/combi_data/elem_BFeAl3/INCAR_static",
-		"/Users/enoki/Library/Application Support/Sublime Text 2/Packages/User/Preferences.sublime-settings",
-		"/Users/enoki/Documents/01_ResearchData/Calculations/99_python/00_workSpace/trivial.py",
-		"/Users/enoki/Documents/01_ResearchData/Calculations/99_python/00_workSpace/test.py",
-		"/Users/enoki/Library/Application Support/Sublime Text 2/Packages/Default/Preferences.sublime-settings",
-		"/Users/enoki/Library/Application Support/Sublime Text 2/Packages/User/Python33.sublime-build",
-		"/Users/enoki/Library/Application Support/Sublime Text 2/Packages/User/Pylinter.sublime-settings",
-		"/Users/enoki/Library/Application Support/Sublime Text 2/Packages/Pylinter/Default (OSX).sublime-keymap",
-		"/Users/enoki/Library/Application Support/Sublime Text 2/Packages/User/Default (OSX).sublime-keymap",
-		"/Users/enoki/Documents/01_ResearchData/Calculations/99_python/00_workSpace/makeSeries.py",
-		"/Users/enoki/Documents/01_ResearchData/Calculations/99_python/00_workSpace/prepVaspInputs.py",
-		"/Users/enoki/Documents/01_ResearchData/Calculations/99_python/00_workSpace/trialRun.py",
-		"/Users/enoki/Library/Application Support/Sublime Text 2/Packages/Pylinter/Pylinter.sublime-settings",
-		"/Users/enoki/Library/Application Support/Sublime Text 2/Packages/Package Control/Package Control.sublime-settings",
-		"/Users/enoki/Library/Application Support/Sublime Text 2/Packages/SublimeREPL/SublimeREPL.sublime-settings"
+		"/Users/enoki/Documents/01_ResearchData/Calculations/01_VASP/05_antiPerovskite/01_CovA_dep/00_plot.py",
+		"/Users/enoki/Documents/01_ResearchData/Calculations/07_CompEeneMod/01_Fe-Ni/tcm/feni-cacc+sro_frombosse.TCM",
+		"/Users/enoki/Documents/01_ResearchData/Calculations/07_CompEeneMod/01_Fe-Ni/tcm/feni_fcc2.tdb",
+		"/Users/enoki/Documents/01_ResearchData/Calculations/99_python/00_workSpace/source/originalsVASP/Calc/run_cova.sh",
+		"/Users/enoki/Documents/01_ResearchData/Calculations/99_python/00_workSpace/test/test_parse_atat.py",
+		"/Users/enoki/test/tc/Fe-Ni/FeNi.tdb",
+		"/Users/enoki/Downloads/opencalphad-ff206056682a66d1e07c2437d81fe8cee2b5d952/macros/map1-agcu.OCM",
+		"/Users/enoki/Downloads/opencalphad-ff206056682a66d1e07c2437d81fe8cee2b5d952/macros/agcu.TDB",
+		"/Users/enoki/Downloads/opencalphad-ff206056682a66d1e07c2437d81fe8cee2b5d952/macros/OU.TDB",
+		"/Users/enoki/Documents/01_ResearchData/Calculations/99_python/00_workSpace/module/parse_atat.py",
+		"/Users/enoki/test/tc/AlSi/from_tdb.tcm",
+		"/Users/enoki/test/tc/Fe-Ni/cef.tdb",
+		"/Users/enoki/Documents/01_ResearchData/Calculations/99_python/00_workSpace/bin/sort_for_line.py",
+		"/Users/enoki/Documents/01_ResearchData/Calculations/99_python/00_workSpace/test/CuAu_TerakuraPRB87.py",
+		"/Users/enoki/Documents/01_ResearchData/Calculations/99_python/00_workSpace/test/test_cnumpy.pyx.py",
+		"/Users/enoki/Documents/01_ResearchData/Calculations/99_python/00_workSpace/test/test_timeit.py",
+		"/Users/enoki/Documents/01_ResearchData/Calculations/99_python/00_workSpace/bin/vasp_collect.py",
+		"/Users/enoki/Documents/01_ResearchData/Calculations/07_CompEeneMod/02_Al-Ti/BCC_2sub.txt",
+		"/Users/enoki/Documents/01_ResearchData/Calculations/07_CompEeneMod/02_Al-Ti/BCC_4sub.txt",
+		"/Users/enoki/Documents/01_ResearchData/Calculations/07_CompEeneMod/02_Al-Ti/parameters/FCC_C.txt",
+		"/Users/enoki/Documents/01_ResearchData/Calculations/07_CompEeneMod/02_Al-Ti/HCP_A3prime.txt",
+		"/Users/enoki/Documents/01_ResearchData/Calculations/07_CompEeneMod/02_Al-Ti/HCP.txt",
+		"/Users/enoki/Documents/01_ResearchData/Calculations/99_python/00_workSpace/module/correlationfunction.c",
+		"/Users/enoki/Documents/01_ResearchData/Calculations/99_python/00_workSpace/bin/pmg_poscar.py",
+		"/Users/enoki/Documents/01_ResearchData/Calculations/99_python/00_workSpace/module/makeSeries.py",
+		"/Users/enoki/Documents/01_ResearchData/Calculations/99_python/00_workSpace/source/originalsVASP/Calc/relax.sh",
+		"/Users/enoki/Desktop/POSCAR",
+		"/Users/enoki/Documents/01_ResearchData/Calculations/99_python/00_workSpace/bin/vasp_poscar.py",
+		"/Users/enoki/Documents/01_ResearchData/Calculations/99_python/01_testRun/atat/Fe-Ni/tex.tex",
+		"/Users/enoki/Documents/01_ResearchData/Calculations/99_python/00_workSpace/bin/make_list_run.py",
+		"/Users/enoki/Documents/01_ResearchData/Calculations/99_python/00_workSpace/test/test_custodian.py",
+		"/Users/enoki/Documents/01_ResearchData/Calculations/99_python/00_workSpace/bin/spg_atat.py",
+		"/Users/enoki/Documents/01_ResearchData/Calculations/99_python/00_workSpace/bin/custodian_static.py",
+		"/Users/enoki/Library/Application Support/Sublime Text 3/Packages/Default/Preferences.sublime-settings",
+		"/Users/enoki/Documents/01_ResearchData/Calculations/99_python/00_workSpace/module/vaspin.py",
+		"/Users/enoki/Documents/01_ResearchData/Calculations/99_python/00_workSpace/module/mycustodian.py",
+		"/Users/enoki/Documents/01_ResearchData/Calculations/99_python/00_workSpace/bin/custodian_relax.py",
+		"/Users/enoki/Documents/01_ResearchData/Calculations/99_python/00_workSpace/python.sublime-project",
+		"/Users/enoki/Documents/01_ResearchData/Calculations/99_python/00_workSpace/test/test_vaspin.py",
+		"/Users/enoki/Documents/01_ResearchData/Calculations/99_python/00_workSpace/module/vaspy.py",
+		"/Users/enoki/Documents/01_ResearchData/Calculations/99_python/00_workSpace/source/originalsVASP/Calc/soc.sh",
+		"/Users/enoki/Documents/01_ResearchData/Calculations/99_python/02_checkio/X-O-Referee",
+		"/Users/enoki/Documents/01_ResearchData/Calculations/99_python/00_workSpace/sorce/originalsVASP/Calc/soc.sh",
+		"/Users/enoki/Documents/01_ResearchData/Calculations/99_python/00_workSpace/bin/vaspy",
+		"/Users/enoki/Documents/01_ResearchData/Calculations/99_python/00_workSpace/bin/vasp_kpoints.py",
+		"/Users/enoki/Documents/01_ResearchData/Calculations/99_python/00_workSpace/bin/draw_band.py",
+		"/Users/enoki/Library/Application Support/Sublime Text 3/Packages/User/Default (OSX).sublime-keymap",
+		"/Users/enoki/Documents/01_ResearchData/Calculations/99_python/02_checkio/HousePassword.py",
+		"/Users/enoki/Documents/01_ResearchData/Calculations/99_python/02_checkio/Non-uniqueElements.py",
+		"/Users/enoki/Documents/01_ResearchData/Calculations/99_python/02_checkio/Median.py",
+		"/Users/enoki/Documents/01_ResearchData/Calculations/99_python/02_checkio/MooreNeighbourhood.py",
+		"/Users/enoki/Documents/01_ResearchData/Calculations/99_python/02_checkio/TheMostWantedLetter.py",
+		"/Users/enoki/Documents/01_ResearchData/Calculations/99_python/00_workSpace/module/collect_akaikkr.py",
+		"/Users/enoki/Documents/01_ResearchData/Calculations/99_python/00_workSpace/module/vaspio.py",
+		"/Users/enoki/Documents/01_ResearchData/Calculations/99_python/00_workSpace/test/test_band.py",
+		"/Users/enoki/Documents/01_ResearchData/Calculations/99_python/00_workSpace/module/collect_vasp.py",
+		"/Users/enoki/Documents/01_ResearchData/Calculations/99_python/00_workSpace/test/test_vaspy.py",
+		"/Users/enoki/Documents/01_ResearchData/Calculations/99_python/00_workSpace/bin/pmg",
+		"/Users/enoki/Documents/01_ResearchData/Calculations/99_python/00_workSpace/bin/ternary_uspex",
+		"/Users/enoki/Documents/01_ResearchData/Calculations/99_python/01_testRun/prepVaspInputs/prepInputs/check_cell"
 	],
 	"find":
 	{
@@ -306,9 +470,10 @@
 	},
 	"find_in_files":
 	{
-		"height": 0.0,
+		"height": 95.0,
 		"where_history":
 		[
+			""
 		]
 	},
 	"find_state":
@@ -316,134 +481,134 @@
 		"case_sensitive": true,
 		"find_history":
 		[
-			"Cabinet",
-			"icon",
-			"cls",
-			"self",
-			"altLine",
-			"#pylint: disable=E1101",
-			"str",
-			"        \n",
-			"self",
-			"    \n",
-			"kp_rx",
-			"xconv",
-			"least",
-			"murnumpyars",
-			"self",
-			"min",
-			"localminimum",
-			"fit",
-			"murn",
-			"nargs",
-			"poscar",
-			"ax",
-			"-20",
-			"set",
-			"sort",
-			"key",
-			"meta",
-			"dir_list",
-			"Table",
-			"DataBox",
-			"Table",
-			"mae_sw",
-			"Fe12Co2N2",
-			"FindGS",
-			"Fe16N2",
+			"OSZICAR",
+			"Mo",
+			"digit",
+			"formula",
+			"re",
+			"plot3D",
+			"PlotTriangularCoord",
+			"Axes3D",
+			"0.666666667     0.333333333 ",
+			"0.333333333     0.666666667 ",
+			"0.000000000     0.000000000 ",
+			"with",
+			"with pickle",
+			"pickle",
+			"comp_all",
+			"pylab",
+			"save",
+			"bench",
+			"select_s0",
+			"相関",
+			"corre",
+			"cutoff",
+			"0.02",
+			"各元素毎に分けて、それぞれを規格化する3Na",
+			"をかけて合算する",
+			"press",
+			"pv",
+			"2d",
+			"_gas",
+			"al",
+			"vacf_symm",
+			"self._n",
+			"_v",
+			"self.steps",
+			"steps",
+			"self._m",
+			"mass",
+			"1",
+			"legend",
+			"xaxis",
+			"xrange",
+			"vacf",
+			"140627",
+			"re",
+			"{",
+			"fcc",
+			"site2",
+			"site1",
+			"fcc.cell == 0",
+			"select",
+			" \n",
+			"tmp_cell",
+			"site2",
+			"site1",
+			"idxs",
+			",\"",
+			"Poscar",
+			"pmg",
+			"gre",
+			"plt_triangle_dot",
+			"sites",
+			"fcc",
+			"tetra",
+			"symm_tetra",
+			"s0",
+			"_s0",
 			"#!/",
-			"tot",
-			"TOTEN",
-			"keywords",
-			"VRHFIN",
-			"0.49285709999999999",
-			"ef",
-			"band_001",
-			"sum_energies",
-			"energy",
-			"band_001",
-			"one_point",
-			"Table",
-			"initial",
-			"mae",
-			"new_site",
-			"self",
-			"Bash",
-			"Compare",
-			"convex_hull",
-			"id",
-			"n",
-			"positions",
-			"pos",
-			"fname",
-			"cp",
-			"plt.ax1",
-			"plt",
-			"write_kpoints",
-			"Kpoints",
-			"kpoints依存性等間隔にふれないのであまり良くない",
-			"make_colorstyle",
-			"axis_dict",
-			"k-point    2",
-			"band   1",
-			"num_ions",
-			"get_band",
-			"pos += 1",
-			"meta_band_header",
-			"lines_pr[pos]",
-			"pos",
-			"lines_pr[pos]",
-			"flow_line",
-			"lines_procar",
-			"lpr",
-			"i",
-			"orbitalHeaderMatcher",
-			"bandHeaderLine",
-			"meta_ba",
-			"bandsCount",
-			"bandHeaderMatcher",
-			"m",
-			"ionsCount",
-			"bandsCount",
-			"m",
-			"\"",
-			"__init__",
-			"readDos",
-			"labels_orbit",
-			"energyNum",
-			"atomNum",
-			"energy",
-			"num_energies",
-			"atomNum",
-			"false",
-			"print()",
-			"Files.write_file",
-			"Files.read_lines",
-			"Files.read_lines\n        ",
-			"\n        ",
-			"Files.write",
-			"Files.read",
-			"File.writeFile",
-			"File.readFile",
-			"writeFile",
-			"readFile",
-			"AKAI_CovA",
-			"AKAI_Conc",
-			"Calc",
-			"bash",
-			"combination_1_2",
-			"MakePattern",
-			"makeSeries",
-			"HandlingDir",
-			"combineAllList",
-			"posN",
-			"pos",
-			"filewrite",
-			",'",
-			"\"",
-			"filename",
-			"newParameters",
-			"def"
+			":,",
+			" ",
+			"dxi_octa",
+			"spins_o",
+			"spins_o2",
+			"flipped_o",
+			"spins_o",
+			"octa",
+			"_idx_pairR4",
+			"_tetra1R2",
+			"_triR1",
+			"_pairR1",
+			"Cell",
+			"_squa",
+			"_tetra",
+			"_idx_pair_R2",
+			"_idx_tri_R1",
+			"_pair_R2",
+			"_tri_R1",
+			"_pair_R1",
+			"_tri_nn",
+			"_idx_tri_R1",
+			"_idx_pair_R1",
+			"_idx_pair_R2",
+			"idx",
+			"_pair_r1",
+			"_pair_r2",
+			"_tri",
+			"_pair_nn",
+			"_pair",
+			"s",
+			"s2r",
+			"s2r2",
+			"s2r",
+			"s",
+			"flipped",
+			"spins",
+			"get_delta_xi_TO",
+			"get_xi_TO_glob",
+			"get_delta_xi_tetra",
+			"_get_delta_xi_tetra",
+			"_get_delta_xi_TO",
+			"get_tetra_dxi",
+			"get_delta_tetra_xi",
+			"spin_flip_dxi",
+			"get_delta_xi_tetra",
+			"032",
+			"delta_xi_TO",
+			"self.COORDS_id0",
+			"self.coords",
+			"coords",
+			"OCTA_POS",
+			"T",
+			"NEXT_N",
+			"TETRA_POS",
+			"TETRA",
+			"TETRA_POS",
+			"r_",
+			"R_1",
+			"R2",
+			"R1"
 		],
 		"highlight": true,
 		"in_selection": false,
@@ -451,6 +616,9 @@
 		"regex": false,
 		"replace_history":
 		[
+			"0.5000000000    0.0000000000",
+			"0.2886751346    0.5000000000",
+			"0.0000000000    0.0000000000",
 			"'"
 		],
 		"reverse": false,
@@ -462,53 +630,148 @@
 	"groups":
 	[
 		{
-			"selected": 0,
+			"selected": 1,
 			"sheets":
 			[
 				{
 					"buffer": 0,
-					"file": "module/ipymatgen.py",
+					"file": "test/test_band.py",
 					"semi_transient": false,
 					"settings":
 					{
-						"buffer_size": 2559,
+						"buffer_size": 10546,
 						"regions":
 						{
 						},
 						"selection":
 						[
 							[
-								436,
-								436
+								1925,
+								1925
 							]
 						],
 						"settings":
 						{
+							"auto_complete": false,
+							"highlight_line": false,
 							"syntax": "Packages/Python/Python.tmLanguage",
 							"tab_size": 4,
 							"translate_tabs_to_spaces": true,
 							"vintage":
 							{
 								"_vintageous_glue_until_normal_mode": false,
-								"_vintageous_gluing_sequence": false,
 								"_vintageous_non_interactive": false,
+								"_vintageous_processing_notation": false,
 								"action": null,
 								"action_count": "",
-								"capture_register": false,
 								"mode": "mode_normal",
 								"motion": null,
 								"motion_count": "",
+								"must_capture_register_name": false,
+								"normal_insert_count": "1",
 								"partial_sequence": "",
 								"register": "\"",
 								"sequence": "",
 								"xpos": 10
 							}
 						},
-						"translation.x": 0.0,
-						"translation.y": 36.0,
+						"translation.x": 32.0,
+						"translation.y": 0.0,
+						"zoom_level": 1.0
+					},
+					"stack_index": 2,
+					"type": "text"
+				},
+				{
+					"buffer": 1,
+					"file": "module/solid.py",
+					"semi_transient": false,
+					"settings":
+					{
+						"buffer_size": 8323,
+						"regions":
+						{
+						},
+						"selection":
+						[
+							[
+								6980,
+								6980
+							]
+						],
+						"settings":
+						{
+							"auto_complete": false,
+							"syntax": "Packages/Python/Python.tmLanguage",
+							"tab_size": 4,
+							"translate_tabs_to_spaces": true,
+							"vintage":
+							{
+								"_vintageous_glue_until_normal_mode": true,
+								"action": null,
+								"action_count": "",
+								"mode": "mode_insert",
+								"motion": null,
+								"motion_count": "",
+								"must_capture_register_name": false,
+								"normal_insert_count": "1",
+								"partial_sequence": "",
+								"register": "\"",
+								"sequence": "",
+								"xpos": 61
+							}
+						},
+						"translation.x": 66.0,
+						"translation.y": 974.0,
 						"zoom_level": 1.0
 					},
 					"stack_index": 0,
+					"type": "text"
+				},
+				{
+					"buffer": 2,
+					"file": "bin/vasp_collect.py",
+					"semi_transient": false,
+					"settings":
+					{
+						"buffer_size": 6520,
+						"regions":
+						{
+						},
+						"selection":
+						[
+							[
+								2813,
+								2813
+							]
+						],
+						"settings":
+						{
+							"auto_complete": false,
+							"syntax": "Packages/Python/Python.tmLanguage",
+							"tab_size": 4,
+							"translate_tabs_to_spaces": true,
+							"vintage":
+							{
+								"_vintageous_glue_until_normal_mode": true,
+								"action": null,
+								"action_count": "",
+								"mode": "mode_insert",
+								"motion": null,
+								"motion_count": "",
+								"must_capture_register_name": false,
+								"normal_insert_count": "1",
+								"partial_sequence": "",
+								"register": "\"",
+								"sequence": "",
+								"xpos": 52
+							}
+						},
+						"translation.x": 0.0,
+						"translation.y": 885.0,
+						"zoom_level": 1.0
+					},
+					"stack_index": 1,
 					"type": "text"
 				}
 			]
@@ -521,7 +784,7 @@
 	],
 	"incremental_find":
 	{
-		"height": 36.0
+		"height": 22.0
 	},
 	"input":
 	{
@@ -547,7 +810,7 @@
 		"cols":
 		[
 			0.0,
-			0.444958854236,
+			0.813887923641,
 			1.0
 		],
 		"rows":
@@ -563,21 +826,23 @@
 	},
 	"output.exec":
 	{
-		"height": 285.0
+		"height": 286.0
 	},
 	"output.find_results":
 	{
 		"height": 0.0
 	},
+	"pinned_build_system": "",
 	"project": "python.sublime-project",
 	"replace":
 	{
-		"height": 46.0
+		"height": 66.0
 	},
 	"save_all_on_build": true,
 	"select_file":
 	{
 		"height": 0.0,
+		"last_filter": "",
 		"selected_items":
 		[
 			[
@@ -590,6 +855,7 @@
 	"select_project":
 	{
 		"height": 500.0,
+		"last_filter": "",
 		"selected_items":
 		[
 		],
@@ -597,17 +863,19 @@
 	},
 	"select_symbol":
 	{
-		"height": 0.0,
+		"height": 375.0,
+		"last_filter": "",
 		"selected_items":
 		[
 		],
-		"width": 0.0
+		"width": 378.0
 	},
+	"selected_group": 0,
 	"settings":
 	{
-		"_vintageous_last_buffer_search": "print_data",
-		"_vintageous_last_char_search_command": "vi_f",
-		"_vintageous_last_character_search": "d",
+		"_vintageous_last_buffer_search": "spins",
+		"_vintageous_last_char_search_command": "vi_big_t",
+		"_vintageous_last_character_search": "E",
 		"_vintageous_last_macro":
 		[
 		],
@@ -615,14 +883,14 @@
 		"_vintageous_reset_during_init": true,
 		"vintage":
 		{
-			"_cmdline_cd": "/Users/enoki/Documents/01_ResearchData/Calculations/99_python/00_workSpace/module"
+			"_cmdline_cd": "/Users/enoki/Researches/Analysis/Codes/00_workSpace/test"
 		}
 	},
 	"show_minimap": true,
 	"show_open_files": true,
 	"show_tabs": true,
 	"side_bar_visible": true,
-	"side_bar_width": 175.0,
+	"side_bar_width": 280.0,
 	"status_bar_visible": true,
 	"template_settings":
 	{

@@ -286,7 +286,8 @@ endif
 
 if (! $?norun ) then
   #echo | $VASPCMD >&! vasp.out
-  echo | custodian_relax.py  
+  #echo | custodian_relax.py  
+  echo | sh ../relax_job.sh
 
   if ($?dostatic) then
     foreach file (INCAR POSCAR OSZICAR OUTCAR CONTCAR KPOINTS vasp.out)

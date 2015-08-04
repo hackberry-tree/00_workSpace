@@ -77,8 +77,8 @@ class P_Sawada(object):
         v = self.c[j][0]
         v += self.c[j][1] / a1
         v += self.c[j][2] / a2
-        v /= 8
-        v *= (1 / 13.6058) * 96.485344520851 * 1000
+        # v /= 8
+        v *= 1000
         return v
 
 
@@ -120,8 +120,8 @@ def main():
     list_v3s = [vs.v(3, x) for x in list_a]
     list_v4s = [vs.v(4, x) for x in list_a]
 
-    pylab.plot(list_a, list_v4)
-    pylab.plot(list_a, list_v4s)
+    pylab.plot(list_a, list_v2)
+    pylab.plot(list_a, list_v2s, 'x')
 
     pylab.show()
 

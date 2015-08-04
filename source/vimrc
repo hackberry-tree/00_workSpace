@@ -1,1 +1,19 @@
-imap jj <Esc>
+imap jk <Esc>
+set number
+set showcmd
+
+nnoremap <silent><F8> :<C-u>call <SID>CopipeTerm()<CR>
+function! s:CopipeTerm()
+    if !exists('b:copipe_term_save')
+        " 値が保存されていなければ保存後に各オプションをコピペ用に設定
+        let b:copipe_term_save = {
+        \     'number': &l:number,
+        \ }
+        setlocal nonumber         " 行番号
+    else
+        " 保存されている場合は復元
+        let &l:number = b:copipe_term_save['number']
+        " 削除
+        unlet b:copipe_term_save
+    endif
+endfunction

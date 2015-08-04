@@ -1000,6 +1000,10 @@ class Outcar(object):
         elements = [meta.match(x).group(1) for x in lines if meta.match(x)]
         return elements
 
+    @staticmethod
+    def get_mag_each_site():
+        pass
+
 
 if __name__ == '__main__':
     main()

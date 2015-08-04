@@ -6,7 +6,9 @@
 cd $PBS_O_WORKDIR
 export nCores=10
 pwd
-vasp_alt_prim.py
+vasp_poscar.py --prim
+cp POSCAR POSCAR_orig
+cp POSCAR_prim POSCAR
 vaspy
 sh Calc/volume_ion.sh
 sh Calc/volume_ion.sh

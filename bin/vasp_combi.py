@@ -7,7 +7,8 @@ from makeSeries import Combinatorial
 
 def main():
     """main"""
-    for_perovskite()
+    #for_perovskite()
+    for_Fe16N2()
 
 def for_ferrite():
     """
@@ -39,6 +40,22 @@ def for_perovskite():
     series.make_files()
     series.append_list_run('run_combi.sh')
 
+def for_Fe16N2():
+    """
+    perovskite系のcombinatorial
+    """
+    Bash.mkdir('combi')
+    elem_list = [['Sc', 'As', 'Se', 'Y', 'Mo',
+                  'Tc', 'Ag', 'Cd', 'In', 'Te',
+                  'Hf', 'Ta', 'W', 'Re', 'Os', 'Ir',
+                  'Au', 'Hg', 'Tl', 'Pb', 'Bi'], ['C', 'B', 'N']]
+    combi = Combinatorial(*elem_list)
+    comp_list = [['Fe', x['elements'][0], 'Fe', x['elements'][1]]
+                 for x in combi.compositions]
+    series = series_vasp.Produce('POSCAR', 'combi')
+    series.set_elements(comp_list)
+    series.make_files()
+    series.append_list_run('run_combi.sh')
 
 if __name__ == '__main__':
     main()

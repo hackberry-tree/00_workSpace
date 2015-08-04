@@ -1,0 +1,23 @@
+#!/opt/anaconda/envs/py3k/bin/python
+# -*- coding: utf-8 -*-
+import numpy as np
+import os
+def test_gs(self):
+    """
+    基底状態探索
+    エネルギーのみを出力
+    """
+    path = '.'
+    while True:
+        rand = float(np.random.rand(1))
+        fcc = FCCXtal.from_pickle_ecis(os.path.join(path, 'cluster.pickle'),
+                                       arrange='random', conc=rand, size=2)
+        if fcc.get_conc() != 0.0 or fcc.get_conc() != 1.0:
+
+            mc = MonteCarlo(fcc, T=1000)
+            mc.loop_fcc_micro_single(500)
+            mc = MonteCarlo(fcc, T=100)
+            mc.loop_fcc_micro_single(1000)
+        line = "{0} {1}\n".format(fcc.get_conc(), fcc.get_energy())
+        with open(os.path.join(self.PATH, 'res.txt'), 'a') as wfile:
+            wfile.write(line)

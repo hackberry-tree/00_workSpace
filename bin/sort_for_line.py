@@ -15,24 +15,31 @@ import pylab
 __date__ = "Sep 4 2014"
 
 PATH = "/Users/enoki/Desktop/cvm02/re_plot_cvm/dat_00.txt"
+PATH = "/Users/enoki/2phaseregion.txt"
+PATH = "/Users/enoki/Documents/01_ResearchData/Calculations/04_CVM/04_Fe-Ni/analysis_141121/phd/sort_lines/data.txt"
 
 def main():
     """main"""
     with open(PATH, 'r') as rfile:
         lines = rfile.readlines()
+    # 1phase目
     data = [[float(x.split()[1]), float(x.split()[0])] for x in lines]
+    # 2phase目
+    # data = [[float(x.split()[2]), float(x.split()[0])] for x in lines]
+    # data = [[float(x.split()[0]), float(x.split()[1])] for x in lines]
     data.sort(key=lambda x: x[0])
     data = set_for_list(data)
     data.sort(key=lambda x: x[1])
 
+    # 開始点
     tail = data.pop(0)
     within = search_within_dy(2, tail, data)
     out = [tail]
     while within:
-        tail = search_nearlest(tail, within, 800)
+        tail = search_nearlest(tail, within, 1000)
         out.append(tail)
         data.remove(tail)
-        within = search_within_dy(50, tail, data)
+        within = search_within_dy(10, tail, data)
     for pt in out:
         print("{0[0]} {0[1]}".format([str(pt[0]), str(pt[1])]))
 
@@ -41,9 +48,12 @@ def main():
 
 
     pylab.plot(datax, datay)
+#    pylab.show()
+#    return
 
-
-    data = [[float(x.split()[3]), float(x.split()[2])] for x in lines]
+#    data = [[float(x.split()[3]), float(x.split()[2])] for x in lines]
+#   print(data)
+#    return
     data.sort(key=lambda x: x[0])
     data = set_for_list(data)
     data.sort(key=lambda x: x[1])
@@ -52,7 +62,7 @@ def main():
     within = search_within_dy(2, tail, data)
     out = [tail]
     while within:
-        tail = search_nearlest(tail, within, 800)
+        tail = search_nearlest(tail, within, 1000)
         out.append(tail)
         data.remove(tail)
         within = search_within_dy(1000, tail, data)
@@ -69,11 +79,13 @@ def main():
 def collect_path(original, tail, yovx=800):
     pass
 
-def search_within_dy(val, p0, ps):
-    return ps
+def search_within_dy(dy, p0, ps):
+    """
+    psの中でp0のyの値との差がdy以下の点をreturnする
+    """
     out = []
     for pt in ps:
-        if (p0[1] - pt[1]) ** 2 <= val ** 2:
+        if (p0[1] - pt[1]) ** 2 <= dy ** 2:
             out.append(pt)
     return out
 

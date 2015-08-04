@@ -1,0 +1,56 @@
+#.bashrc for centos systems (warren & landau)
+PS1="[\\[\033[36m\]\u@\h \W\[\033[0m\]]\\$ "
+
+alias ls="ls --color=auto"
+export LS_COLORS="di=34:ln=35:so=32:pi=33:ex=32:bd=34;46:cd=34;43:su=0;41:sg=0;46:tw=0;42:ow=0;43:"
+ulimit -s unlimited
+
+# pbcopy pbpaste
+alias pbcopy='xsel --clipboard --input'
+alias pbpaste='xsel --clipboard --output'
+
+# disable Ctrl+s
+[ -t 0 ] && stty stop undef
+
+# for anaconda & openmpi
+PATH=/usr/local/openmpi-1.4.4-intel64-v11.1.073/bin/:/opt/anaconda/bin/:$PATH
+LD_LIBRARY_PATH=/usr/local/openmpi-1.4.4-intel64-v11.1.073/lib/:$LD_LIBRARY_PATH
+
+# for my-workspace
+VASP_POTPAW=$HOME/vasp/vasp_potential/vasp/potpaw_PBE/
+PATH=$MYSCRIPTS/bin:$PATH
+PYTHONPATH=$MYSCRIPTS/module
+
+# for phonopy
+PATH=$PATH:~/phonopy-1.9.4-rc1/bin
+#PYTHONPATH=$PYTHONPATH:/opt/phonopy/lib/python
+PYTHONPATH=$PYTHONPATH:~/phonopy-1.9.4-rc1/lib/python
+
+# for SPRKKR
+XBANDPATH=/opt/band
+PATH=$PATH:$XBANDPATH
+
+# for Open MPI
+OMP_NUM_THREADS=1
+
+# for atat
+PATH=$PATH:/opt/atat_3.04
+PATH=$MYSCRIPTS/bin/atat:$PATH
+
+# for cvm
+PATH=$PATH:/opt/cvm/
+PATH=$PATH:$MYSCRIPTS/bin/prep_cvm/
+
+# for zengen
+PATH=$PATH:$MYSCRIPTS/bin/zengen2.0
+
+export PATH VASP_POTPAW PYTHONPATH XBANDPATH OMP_NUM_THREADS LD_LIBRARY_PATH
+
+# for iTerm color
+export ADDITIONAL_VIMRC=$HOME/.vimrc_def
+if test "`who am i | cut -d '(' -f 2 | sed -e 's/)//g'` " = "cicada "; then
+  export ADDITIONAL_VIMRC=$HOME/.vimrc_cicada
+fi
+if test "`who am i | cut -d '(' -f 2 | sed -e 's/)//g'` " = "cicada_u "; then
+  export ADDITIONAL_VIMRC=$HOME/.vimrc_cicada
+fi

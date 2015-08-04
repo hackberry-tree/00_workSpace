@@ -7,6 +7,7 @@ import os
 import glob
 import math
 import pylab
+import pickle
 import argparse
 import collect_vasp
 from fitting_analysis import FitData
@@ -18,32 +19,130 @@ def main():
     """
     parser = argparse.ArgumentParser(description='print series of data')
     # path (outputファイルまで入れて検索させる)
-    parser.add_argument('strings', metavar='P', type=str, nargs='+',
+    parser.add_argument('path', type=str, nargs=1,
                         help='enter path')
     # for FeB
     parser.add_argument('--feb', dest='run', const=for_uspex_FeB_print_data,
                         action='store_const', default=print_data)
-    #parser.add_argument('--def', dest='run', const=print_data)
-    parser.add_argument('--mae', dest='mae', const=True, action='store_const',
-                        default=False)
+    # for ATAT
+    parser.add_argument('--atat', dest='run', const=print_data_atat,
+                        action='store_const', default=print_data)
+
+    # for MAE
+    parser.add_argument('--mae', dest='mae', const=True,
+                        action='store_const', default=False)
+
+    # for combi
+    # e.g. "elem_*/OSZICAR" --combi --combi_pos 0 1
+    parser.add_argument('--combi', dest='combi', type=int, nargs=2,
+                        action='append', default=None)
+
+    # for arb. file name
+    parser.add_argument('--posc', dest='posc', type=str, nargs=1,
+                        action='store', default=None)
+    parser.add_argument('--osz', dest='osz', type=str, nargs=1,
+                        action='store', default=None)
+
+    parser.add_argument('--mg_fit', dest='run', const=print_data_mg,
+                        action='store_const', default=print_data)
+
+
+
     args = parser.parse_args()
-    print(args.strings)
-    args.run(args.strings[0], args.mae)
+    opt = {'path': args.path[0]}
+    if args.mae:
+        opt.update({'mae': True})
+    if args.combi:
+        opt.update({'pos': args.combi[0]})
+        args.run = correct_combi
+    if args.posc:
+        opt.update({'posc': args.posc[0]})
+    if args.osz:
+        opt.update({'osz': args.osz[0]})
+    # print(opt)
+    args.run(**opt)
+
+def print_data_mg(path, mae=False):
+    """
+    MurnaghanFit の結果を収集する
+    """
+    dir_list = [os.path.dirname(x) for x in glob.glob(path)]
+    data = collect_vasp.Mg_fit_results.from_dir_list(dir_list)
+    data.set_comp_dict_f()
+    print(data)
+    data.make_energies_txt()
+
+def correct_combi(path, pos, mae=False):
+    """
+    入力のpathはワイルドカードを使用可能
+    os.path.dirnameを修得するのでoutputファイルまで入れて検索させること
+    e.g. "elem_*/OSZICAR"
+    読み込むファイルは osz.static
+    """
+    print(pos)
+    dir_list = [os.path.dirname(x) for x in glob.glob(path)]
+    data = collect_vasp.Energy(dir_list, 'POSCAR', 'OSZICAR')
+    data.set_enthalpy()
+    data.alt_elements_from_dir()
+    data.alt_cova_posstsd()
+    data.set_elements_z()  # 原子番号をset
+
+    if mae:
+        data.set_mae('OSZICAR_soc001', 'OSZICAR_soc100')
+
+    print(data.data[0]['Z'])
+    data.data.sort(key=lambda x: x['Z'][pos[0]])
+    data.data.sort(key=lambda x: x['Z'][pos[1]])
+    data.output_keys = ['elements', 'enthalpy']
+
+    if mae:
+        table_mae = data.table_combi(pos, 'mae')
+        print(table_mae)
+
+    table_ene = data.table_combi(pos, 'enthalpy')
+    print(table_ene)
+    table_mag = data.table_combi(pos, 'mag')
+    print(table_mag)
+    table_cova = data.table_combi(pos, 'c/a')
+    print(table_cova)
+
+    table_ene = data.separate_data('elements', pos[0])
+    # print(table_ene[pos[0]]['elements'][:,pos[1]])
+    #plt = grapy.Vertical(3)
+    #self.plot(plt, table_ene, 'order', 'enthalpy', 'mag', 'c/a')
 
 
-def print_data(path, mae='False'):
+def print_data(path, mae=False, posc='POSCAR', osz='OSZICAR'):
     """
     入力のpathはワイルドカードを使用可能
     os.path.dirnameを修得するのでoutputファイルまで入れて検索させること
     """
     dir_list = [os.path.dirname(x) for x in glob.glob(path)]
-    data = collect_vasp.Energy(dir_list, 'POSCAR', 'OSZICAR')
+    data = collect_vasp.Energy(dir_list, posc, osz)
     data.set_comp_dict_f()
     data.set_enthalpy()
-    if mae:
+    print(mae)
+    if mae == True:
         data.set_mae('OSZICAR_soc001', 'OSZICAR_soc100')
-    #data.output_keys = ['comp_dict_f', 'energy', 'enthalpy', 'path']
+        data.output_keys = ['energy', 'enthalpy', 'path', 'mae']
     print(data)
+
+def print_data_atat(path):
+    """
+    入力のpathはワイルドカードを使用可能
+    os.path.dirnameを修得するのでoutputファイルまで入れて検索させること
+    150615
+    convex hull 用に data の pickle を保存するように修正
+    """
+    dir_list = [os.path.dirname(x) for x in glob.glob(path)]
+    data = collect_vasp.Energy(dir_list, 'POSCAR.static', 'OSZICAR.static')
+    data.set_comp_dict_f()
+    data.set_enthalpy()
+    data.output_keys = ['comp_dict_f', 'energy', 'enthalpy', 'spg', 'spg_num',
+                        'volume', 'mag', 'path']
+    print(data)
+    with open("collect_data.pickle", 'wb') as wbfile:
+        pickle.dump(data, wbfile)
 
 def for_uspex_FeB_print_data(_, _2):
     two_dir = ['results1_POSCARS_FeB', 'results1_POSCARS_Fe_only']
@@ -60,7 +159,7 @@ def for_uspex_FeB_print_data(_, _2):
         for data in data.data:
             dirname = os.path.basename(data['path'])
             out.update({dirname: {'enthalpy': data['enthalpy']}})
-            out[dirname].update({'comp_dict_f': data['comp_dict_f']})
+            out[dirname].update({'comp_dict_f': data['comp_dict_f']}    )
             out[dirname].update({'comp_dict_i': data['comp_dict_i']})
             out[dirname].update({'errE': data['errE']*96.4})
         return out
@@ -83,8 +182,6 @@ def for_uspex_FeB_print_data(_, _2):
             pass
     result = DataBox(data_box)
     print(result)
-
-
 
 def get_result(path):
     osz_path = os.path.join(path, 'voldep/volume_*/OSZICAR')

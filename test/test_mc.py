@@ -8,29 +8,18 @@ import glob
 import timeit
 import shutil
 import unittest
-
+import correlationfunction as cf
 import parse_atat
-#import pyximport; pyximport.install(pyimport=True)
+# import pyximport; pyximport.install(pyimport=True)
+# from mcc import *
 from mc import *
+# import numpy as np
+# cimport numpy as np
 
 __date__ = "Nov 17 2014"
 
 TEST_PATH = ("/Users/enoki/Documents/01_ResearchData/Calculations/"
              "99_python/01_testRun/")
-
-
-def test1():
-    cell = CellFCC(20, mode='L10')
-    print('concentration')
-    print(cell.get_conc(1))
-    print('local xi at 0 0 0')
-    print(cell.get_tetra_xi([0, 0, 0], 0))
-    print('gloval xi')
-    print(cell.get_tetra_xi_glob())
-
-lines = 'test1()'
-#lines = 'cell = CellFCC(10, mode="L10")'
-timeit.timeit(lines, number=1, setup="from __main__ import test1")
 
 
 def main():
@@ -43,42 +32,142 @@ class Test(unittest.TestCase):
     """
     PATH = os.path.join(TEST_PATH, 'mc')
 
-    def test_mc(self):
+    @staticmethod
+    def _test_octahedron_xi():
         """
-
+        TO の相関関数を print
+        両者が一致するか確認
         """
-        # l = 10**5
-        # print(l)
-        # conc = 0
-        # j = []
-        # for i in range(l):
-        #     j.append(int(2*round(random.uniform(conc/2., 0.5+conc/2.))-1))
-        # print(j[0])
-        # print(j.count(1)/float(l))
-        # rand = QuadSite.random(0.5)
-        # print(rand)
-        # print(timeit)
+        Octahedron.print_matrix()
+        cf.Octahedron.print_matrix()
 
-        # cell = CellFCC(10)
-        # print('concentration')
-        # print(cell.get_conc(1))
-        # print('gloval xi')
-        # print(cell.get_tetra_xi_glob())
+    @staticmethod
+    def _test_tetrahedron_xi():
+        """
+        TT の相関関数を print
+        両者が一致するか確認
+        """
+        Tetrahedron.print_matrix()
+        cf.Tetrahedron.print_matrix()
 
-        # cell = CellFCC(10, mode='L10')
-        # print('concentration')
-        # print(cell.get_conc(1))
-        # print('local xi at 0 0 0')
-        # print(cell.get_tetra_xi([0, 0, 0], 0))
-        # print('gloval xi')
+    @staticmethod
+    def _test_xi_TO():
+        """
+        tetrahedron octahedronの相関関数をチェック
+        特に四面体からのnull, point, pair_nn, tri_nnと
+        八面体のとが同じ値を取っているかtestする
+        """
+        cell = FaceCenterCubic(30, arrange='L12_B')
+        assert all((cell.get_octa_xi_glob()[[0, 1, 2, 4]] -
+                    cell.get_tetra_xi_glob()[: 4]) ** 2 < 1e-8)
 
-        # test
-        # print(cell.from_origin([0, 0, 0, 0], 1) == cell.from_origin([-1, 0, 0, 3], 2))
-        # print(cell.from_origin([0, 0, 0, 3], 2) == cell.from_origin([0, 0, 0, 2], 3))
-        # print(cell.from_origin([0, 0, 0, 1], 3) == cell.from_origin([0, 1, 0, 2], 0))
-        # print(cell.from_origin([1, 2, 3, 1], 1) == cell.from_origin([1, 3, 4, 0], 0))
-        # print(cell.from_origin([0, 0, 0, 0], 2) == cell.from_origin([0, 0, 0, 2], 0))
+    @staticmethod
+    def _test_dxi():
+        """
+        スピンフリップに伴う相関関数の変化量を check する
+        """
+        cell = FaceCenterCubic(2, arrange='L12_A')
+        print('concentration')
+        print(cell.get_conc(1))
+        print('gloval xi')
+        print(cell.get_tetra_xi_glob())
+        cuau = Tetrahedron(0.5)
+        print("Delta Xi")
+        xi = cell.get_tetra_dxi(0)
+        print(xi.shape)
+        print(cuau.ecis.shape)
+        de = xi * cuau.ecis
+        print(np.exp(de.sum(axis=1)))
+        print(np.exp(1))
 
+    @staticmethod
+    def _test_orderparam():
+        """
+        order parameter 計算の test
+        """
+        cell = FaceCenterCubic(2, arrange='L12_A')
+        cell = FaceCenterCubic(24, arrange='random')
+        cuau = Tetrahedron(0.5).ecis
+        moncal = MonteCarlo(cuau, cell, 100)
+        #de = moncal.delta_e()
+        #print(de)
+        #print(moncal.transition_probability(de))
+        print(moncal._iteration(10))
+        print(cell.get_orderparam(1))
+        print(cell.get_orderparam(2))
+        print(cell.get_orderparam(3))
+        print(cell.get_orderparam(4))
+        print(cell.get_orderparam(6))
+        print(cell.get_orderparam(11))
+
+    def test_gs_TO(self):
+        """
+        TO近似の規則相のエネルギー比較 check
+        """
+        path = os.path.join(TEST_PATH, "montecalro/", "AlCu", "wien", "TO")
+        cell = FaceCenterCubic(10, arrange='L10', conc=0.95)
+        fname = os.path.join(path, 'POSCAR.pickle')
+        #cell = FaceCenterCubic.load_cell(fname)
+
+        for i in range(1):
+            #dirc = os.path.join(path, 'data_{0}'.format(i))
+            #os.makedirs(dirc)
+            t = 500/(i+1)
+            t = 300
+            moncal = MonteCarlo(ecis, cell, t)
+            #conc_ene = moncal._iterationTO_reserved_atoms(100)
+            conc_ene = moncal._iterationTO(10)
+            fname = os.path.join(path, 'POSCAR')
+            cell.make_poscar(fname)
+            stack_data.append([i, conc_ene[-1][0], conc_ene[-1][1]])
+        cell.save_cell(fname)
+        return
+
+        lines = "\n".join([" ".join([str(x) for x in data])
+                           for data in stack_data])
+        fname = os.path.join(path, 'comp_ene.txt')
+        with open(fname, 'w') as wfile:
+            wfile.write(lines)
+        cell.save_cell(fname)
+        fname = os.path.join(path, 'POSCAR')
+        cell.make_poscar(fname)
+
+        return
+        for i in range(1):
+            dirc = os.path.join(path, 'data_{0}'.format(i))
+            os.makedirs(dirc)
+
+            cell = FaceCenterCubic(10, arrange='random')
+            moncal = MonteCarlo(ecis, cell, 10)
+            conc_ene = moncal._iterationTO(10)
+            fname = os.path.join(dirc, 'POSCAR')
+            cell.make_poscar(fname)
+            stack_data.append([i, conc_ene[-1][0], conc_ene[-1][1]])
+        lines = "\n".join([" ".join([str(x) for x in data])
+                           for data in stack_data])
+        fname = os.path.join(path, 'comp_ene.txt')
+        with open(fname, 'w') as wfile:
+            wfile.write(lines)
+
+
+        # print(cell.get_orderparam(1))
+
+    def _test_get_conc(self):
+        cell = FaceCenterCubic(4, arrange='random')
+        print(cell.get_conc(1))
+
+    def _test_fct_print_coordinates(self):
+        FaceCenterTetragonal.print_coordinates()
+
+    def _test_fcc_print_coordinates(self):
+        FaceCenterCubic.print_coordinates()
+
+    def _test_fct(self):
+        fct = FaceCenterTetragonal(4, arrange='random')
+
+    def _test_fcc(self):
+        fcc = FaceCenterCubic(4, arrange='random')
+        print(fcc.OCTA == fcc._OCTA)
 
 
 def clean_prev(path, files):
@@ -90,6 +179,7 @@ def clean_prev(path, files):
         fname = os.path.join(path, trush)
         os.remove(fname)
         print("{0} is removed.".format(fname))
+
 
 def clean_prev_dir(path, dirc):
     """

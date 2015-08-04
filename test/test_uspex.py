@@ -8,21 +8,23 @@ import shutil
 import unittest
 import uspex
 import convex_hull
+from mpl_toolkits.mplot3d import Axes3D
+import pickle
 from commopy import Bash
 
+TEST_PATH = ("/Users/enoki/Researches/Analysis/Codes/01_testRun/")
 
-TEST_PATH = ("/Users/enoki/Documents/01_ResearchData/Calculations/"
-             "99_python/01_testRun/")
 
 def main():
     unittest.main()
+
 
 class TestUspexPOSCARS(unittest.TestCase):
     """
     POSCARSを展開するテスト
     """
     path = os.path.join(TEST_PATH, 'uspex', 'POSCAR')
-    def test_split_structure(self):
+    def _test_split_structure(self):
         """
         構造毎に別けて出力
         Fe-Bの二元系計算が例
@@ -50,16 +52,23 @@ class TestUspexPOSCARS(unittest.TestCase):
 class TestOrigin(unittest.TestCase):
     path = os.path.join(TEST_PATH, 'uspex', 'origin')
 
-    def test_draw_family_tree(self):
+    def _test_draw_family_tree(self):
         path_orig = os.path.join(self.path, 'origin')
         origin = uspex.Origin(path_orig, 1866)
         origin.draw_family_tree(self.path)
+
+    def _test_draw_Ti(self):
+        path = os.path.join(self.path, 'Ti-S-C', 'origin')
+        origin = uspex.Origin(path, 830)
+        print(origin.lineage)
+        origin.draw_family_tree(os.path.join(self.path, 'Ti-S-C'))
+
 
 class TestAuxiliary(unittest.TestCase):
     path2 = os.path.join(TEST_PATH, 'uspex', 'binary')
     path3 = os.path.join(TEST_PATH, 'uspex', 'ternary')
 
-    def test_binary(self):
+    def _test_binary(self):
         aux = uspex.Auxiliary.from_file(self.path2)
         aux.binary()
 
@@ -68,7 +77,12 @@ class TestAuxiliary(unittest.TestCase):
         aux = uspex.Auxiliary.from_file(self.path3)
         aux.ternary()
         initial_base, not_bases, meta_stables = aux.separate_bases()
-        ax = convex_hull.draw_convex_hull(initial_base, not_bases,
+        fig = pylab.figure()
+        ax = Axes3D(fig)
+        with open('/Users/enoki/pickle', 'wb') as wbfile:
+            data = pickle.dump(meta_stables, wbfile)
+
+        convex_hull.draw_convex_hull(ax, initial_base, not_bases,
                                           out.elements, [-60, 5])
         pylab.show()
 

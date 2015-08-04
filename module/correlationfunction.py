@@ -6,6 +6,7 @@
 """
 import math
 import numpy as np
+from itertools import combinations, chain
 from makeSeries import MakePattern
 
 class SpinOperator(object):
@@ -17,26 +18,28 @@ class SpinOperator(object):
         """
         spinの積をとってsumをreturnする
         """
-        return sum([cls.times_spins(s) for s in spins]) / len(spins)
+        return np.array([cls.times_spins(s) for s in spins]).mean()
 
     @staticmethod
     def times_spins(spins):
         """
         全てのspinの積をretrun
         """
-        i = 1
-        for spin in spins:
-            i *= spin
-        return i
-        #return spins.prod()
+        # i = 1
+        # for spin in spins:
+        #     i *= spin
+        # return i
+        spins = np.array(spins)
+        return spins.prod()
 
 
 class Octahedron(SpinOperator):
     """
     四面体と異なってサイトの位置関係で相関関数が異なる
     spinsは(0,1) (2,3) (4,5)が第二隣接の組み合わせとして入力する
-    spinsを各組み合わせで平均をとって[-1/0/1]*3のlistに
+    spinsを第二隣接同士の各組み合わせで平均をとって[-1/0/1]*3のlistに
     変換して処理した方が早いかもしれない
+    パターンとして3^3=27通りを分類分けすることになる
     """
     def __init__(self, ecis):
         self.ecis = ecis
@@ -46,9 +49,9 @@ class Octahedron(SpinOperator):
         """
         第二隣接同士で組み合わせたlistをreturnする
         """
-        return [[spins[0], spins[1]],
-                [spins[2], spins[3]],
-                [spins[4], spins[5]]]
+        return [spins[0:2],
+                spins[2:4],
+                spins[4:6]]
 
     @staticmethod
     def _null(_):
@@ -62,7 +65,7 @@ class Octahedron(SpinOperator):
         """
         点クラスターの相関関数
         """
-        return cls.sum_spins([[s] for s in spins])
+        return sum(spins)/len(spins)
 
     @classmethod
     def _pair(cls, spins):
@@ -70,6 +73,7 @@ class Octahedron(SpinOperator):
         第一隣接の二体クラスターの相関関数
         """
         sp_gp = cls._nn_combi(spins)
+        #pair_gp = itertools.combinations(sp_gp, 2)
         pair_gp = MakePattern.nCrList(sp_gp, 2)
         pair = [y for x in pair_gp for y in MakePattern.make_tree(*x)]
         return cls.sum_spins(pair)
@@ -153,7 +157,7 @@ class Octahedron(SpinOperator):
             print(" ".join(xi))
 
 
-class Tetrahedron(SpinOperator):
+class Tetrahedron(object):
     """
     ECIを引数にobjectを生成
     tetraのspin配列を代入することでenergyを算出できる
@@ -174,15 +178,16 @@ class Tetrahedron(SpinOperator):
         """
         点クラスターの相関関数
         """
-        return cls.sum_spins([[s] for s in spins])
+        return spins.mean()
 
     @classmethod
     def _pair(cls, spins):
         """
         第一隣接の二体クラスターの相関関数
         """
-        pair = MakePattern.nCrList(spins, 2)
-        return cls.sum_spins(pair)
+        idx = np.fromiter(chain.from_iterable(
+            combinations(range(len(spins)), 2)), np.int).reshape(-1, 2)
+        return (spins[idx[:, 0]] * spins[idx[:, 1]]).mean()
 
     @classmethod
     def _tri(cls, spins):
@@ -196,7 +201,7 @@ class Tetrahedron(SpinOperator):
         """
         四面体クラスターの相関関数
         """
-        return cls.times_spins(spins)
+        return spins.prod()
 
     @classmethod
     def all(cls, spins):
@@ -204,15 +209,14 @@ class Tetrahedron(SpinOperator):
         [null, point, pair, tri, tetra]の相関関数をlistにしてretrun
         """
         clusters = [cls._null, cls._point, cls._pair, cls._tri, cls._tetra]
-        return [c(spins) for c in clusters]
+        return np.array([c(spins) for c in clusters])
 
     @classmethod
-    def average(cls, spins_list):
+    def average(cls, spins_array):
         """
-        spins_listから相関関数を全て計算してその平均をreturn
+        spins_arrayから相関関数を全て計算してその平均をreturn
         """
-        return [math.fsum(i)/len(i) for i in zip(*[cls.all(spins)
-                                             for spins in spins_list])]
+        return np.array([cls.all(s) for s in spins_array]).mean(0)
     @classmethod
     def print_matrix(cls):
         """
@@ -232,7 +236,8 @@ class Tetrahedron(SpinOperator):
             print(" ".join(xi))
 
 if __name__ == '__main__':
-    for i in range(3000):
-        Tetrahedron.print_matrix()
+    #for i in range(3000):
+    #    Tetrahedron.print_matrix()
     Octahedron.print_matrix()
+    Tetrahedron.print_matrix()
 

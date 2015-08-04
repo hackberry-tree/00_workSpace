@@ -15,6 +15,36 @@ import subprocess
 import numpy as np
 
 
+class CyclicList(list):
+    """
+    周期境界条件を課したlist
+    不要だけどmemoとして残す
+    """
+    def __init__(self, item):
+        super(CyclicList, self).__init__(item)
+
+    def __getitem__(self, index):
+        """
+        index%len(self)で周期性を与える
+        sliceが使えるようTypeErrorの場合はpassする
+        """
+        try:
+            index = index % len(self)
+        except TypeError:
+            pass
+        return super(CyclicList, self).__getitem__(index)
+
+    def __setitem__(self, index, item):
+        """
+        index%len(self)で周期性を与える
+        """
+        try:
+            index = index % len(self)
+        except TypeError:
+            pass
+        return super(CyclicList, self).__setitem__(index, item)
+
+
 class LinkedList(object):
     """連結リスト構造"""
 
@@ -153,9 +183,12 @@ class DataBox(object):
         for data in self.data:
             line = []
             for key in keys:
-                if type(data[key]) is dict:
-                    data[key] = "\t".join([str(x) for x in data[key].values()])
-                line.append(str(data[key]))
+                try:
+                    if type(data[key]) is dict:
+                        data[key] = "\t".join([str(x) for x in data[key].values()])
+                    line.append(str(data[key]))
+                except KeyError:
+                    line.append("")
             out_lines += "\t".join(line) + "\n"
         return out_lines
 

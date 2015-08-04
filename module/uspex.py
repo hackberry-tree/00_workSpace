@@ -100,6 +100,7 @@ class POSCARS(object):
             poscars.append({'ID': num_id, 'lines': lines})
         return poscars
 
+
 class Output(object):
     """
     OUTPUT.txtからparameterを読み取る
@@ -120,6 +121,7 @@ class Output(object):
                 elements = meta.match(line).group(1)
         return elements.split()
 
+
 class Auxiliary(DataBox):
     """
     USPEXの出力ファイルAuxiliaryFilesを取り扱う
@@ -138,7 +140,7 @@ class Auxiliary(DataBox):
         AuxiliaryFile directoryのあるpathを指定
         三つのファイルからデータを読み込む
         """
-        return Auxiliary(cls.read_data(path))
+        return cls(cls.read_data(path))
 
     def binary(self):
         """
@@ -250,10 +252,10 @@ class Origin(object):
     def __init__(self, fname, descendant):
         """
         attributeは5つ
-        individuals: originファイルから読み出した全てのindividual
-        descendant: 末裔、これを指定してそれが含まれるlineageを作成
-        lineage: descendantから遡ってparentsの情報を収集したもの
-        ancestor: lineage中の原種
+        individuals: origin file から読み出した全ての individual
+        descendant: (末裔) これを指定してそれが含まれる lineage を作成
+        lineage: (家系) descendant から遡って parents の情報を収集したもの
+        ancestor: lineage 中の原種
         has_parents: heredityで進化したindividual
         one_parents: heredity以外のindividual
         """
@@ -365,6 +367,13 @@ class Origin(object):
         乱数を使って回避
         点の間隔に疎密が生じるので、bloodの値を再定義する
         (bloodが小さい値から順に等間隔でbloodの値を入れなおす)
+
+        150608
+        2種とも mutation した親を持つ場合, その2種が同じbloodを持ってしまう場合がある
+        if blood in blood_list:
+            blood += 0.01
+        を加えて回避
+        時間があれば、もっとスマートな方法を考える
         """
         keys = [x for x in self.lineage.keys()]
         blood_list = []
@@ -387,9 +396,11 @@ class Origin(object):
             elif self.lineage[key]['background'] == 'softmutation':
                 blood = self.lineage[parents[0]]['blood']
                 if blood < average:
-                    blood += 0.01
+                    blood += 0.01*i
                 else:
-                    blood -= 0.01
+                    blood += 0.01*i
+                if blood in blood_list:
+                    blood += 0.01
                 blood_list.append(blood)
             else:
                 blood = self.lineage[parents[0]]['blood']

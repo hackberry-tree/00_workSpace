@@ -7,11 +7,11 @@
 		},
 		{
 			"follow_symlinks": true,
-			"path": "/Users/enoki/Documents/01_ResearchData/Calculations/99_python/01_testRun"
+			"path": "/Users/enoki/Researches/Analysis/Codes/01_testRun"
 		},
 		{
 			"follow_symlinks": true,
-			"path": "/Users/enoki/Documents/01_ResearchData/Calculations/99_python/02_checkio"
+			"path": "/Users/enoki/Researches/Analysis/Codes/02_checkio"
 		}
 	],
 	"settings":

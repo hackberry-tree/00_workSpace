@@ -200,6 +200,8 @@ class MurnaghanEoS(DataBox):
     def alt_atP_without_B(self, pressure):
         """
         圧力(GPa)におけるenergyを追加
+        単位は eV
+        1 eV/A^3 = 160.2 GPa
         """
         self['gibbs'] = self['G_P0'] + pressure / 160.2 * self['V0']
 

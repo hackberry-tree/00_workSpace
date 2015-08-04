@@ -8,10 +8,125 @@ import re
 import glob
 import pylab
 import numpy as np
+from collections import Counter
 import vaspy
 import solid
 from commopy import Cabinet, Array, DataBox
 from fitting_analysis import FitData
+from pymatgen.io.vaspio import Poscar
+from pymatgen.symmetry.analyzer import SpacegroupAnalyzer
+
+
+class Mg_fit_results(DataBox):
+    """
+    Murnaghan fit の結果を読む
+    """
+    def __init__(self, data):
+        DataBox.__init__(self, data)
+        self.output_keys = []
+
+    @classmethod
+    def from_dir_list(cls, dir_list):
+        """
+        dir_list から結果を収集
+        """
+        data_box = []
+        for dirc in dir_list:
+            results = {}
+            results.update(
+                cls.parse_fit_results(os.path.join(dirc, 'fit_results.dat')))
+            results.update(cls.parse_poscar(os.path.join(dirc, 'POSCAR')))
+            results.update({'path': dirc})
+            data_box.append(results)
+        return cls(data_box)
+
+    @staticmethod
+    def parse_fit_results(path='fit_results.dat'):
+        """
+        fit_results.dat を読み込む
+        """
+        with open(path, 'r') as rfile:
+            lines = rfile.readlines()
+        energy = lines[0].split()[1]
+        volume = lines[3].split()[1]
+        return {'energy': energy, 'volume': volume}
+
+    @staticmethod
+    def parse_poscar(path='POSCAR'):
+        """
+        POSCAR を読み込む
+        """
+        with open(path, 'r') as rfile:
+            lines = rfile.readlines()
+        elements = lines[5].split()
+        num_atoms = [int(x) for x in lines[6].split()]
+        return {'elements': elements, 'num_atoms': num_atoms}
+
+    def set_comp_dict_f(self):
+        """
+        組成比を分率で作成
+        """
+        comp_all = set([x for y in self['elements'] for x in y])
+        for data in self.data:
+            comp_dict = {elem: 0 for elem in comp_all}
+            sum_atoms = float(sum(data['num_atoms']))
+            comp_dict_r = {elem: num/sum_atoms for elem, num
+                           in zip(data['elements'], data['num_atoms'])}
+            comp_dict.update(comp_dict_r)
+            data.update({'comp_dict_f': comp_dict})
+
+    def make_energies_txt(self):
+        """
+        構造の名前は str.out と atoms を使って作成する
+        """
+        with open('atoms', 'r') as rfile:
+            lines = rfile.readlines()
+        label = 'ABCDEFG'
+        atoms = {label[i]:lines[i][:-1] for i in range(len(lines))}
+        self.data.sort(key=lambda x: x['path'])
+
+        lines_out = ""
+        for data in self.data:
+            with open(os.path.join(data['path'], "str.out"), 'r') as rfile:
+                lines = rfile.readlines()
+            elements = Counter([x.split()[-1] for x in lines[6:]])
+            lines_out += data['path'] + "*"
+            for key in sorted(atoms.keys()):
+                lines_out += key + str(elements[atoms[key]])
+            lines_out += " 1 " + str(data['energy']) + " 1\n"
+        with open("energies.txt", 'w') as wfile:
+            wfile.write(lines_out)
+
+
+
+
+    def __str__(self):
+        """
+        Print self.data
+        特定の要素のみを書き出したい場合は
+        self.output_keysに指定する
+        defaultでは全てを書き出す
+        """
+        keys = self.output_keys
+        if not keys:
+            keys = self.data[0].keys()
+        types_dict = [x for x in keys if type(self.data[0][x]) is dict]
+        out_lines = "\t".join(keys) + "\n"
+        for key in types_dict:
+            head = "".join(key.split('_dict')) + "_"
+            label = [head + str(x) for x in sorted(self.data[0][key])]
+            alt_label = "\t".join(label)
+            out_lines = out_lines.replace(key, alt_label)
+        for data in self.data:
+            line = []
+            for key in keys:
+                if type(data[key]) is dict:
+                    data[key] = "\t".join([str(data[key][x]) for x
+                                           in sorted(data[key])])
+                line.append(str(data[key]))
+            out_lines += "\t".join(line) + "\n"
+        return out_lines
+
 
 class Procar(DataBox):
     """
@@ -37,14 +152,14 @@ class Procar(DataBox):
         bandの横軸の長さを対応させることができる
         defaultではposcarは読まずに、a*, b*, c*の長さは全て1
         """
-        flow_procar = open(procar)
-        line = flow_procar.readline()
-        line = flow_procar.readline()
-        (self.num_kpoints,
-         self.num_bands,
-         self.num_atoms) = self.get_meta(line)
-        print(self.get_meta(line))
-        DataBox.__init__(self, self.get_data(flow_procar))
+        with open(procar, 'r') as flow_procar:
+            line = flow_procar.readline()
+            line = flow_procar.readline()
+            (self.num_kpoints,
+             self.num_bands,
+             self.num_atoms) = self.get_meta(line)
+            print(self.get_meta(line))
+            DataBox.__init__(self, self.get_data(flow_procar))
 
     def set_turning_kpoints(self):
         """
@@ -59,6 +174,24 @@ class Procar(DataBox):
                          if not (delta_k[i] == delta_k[i+1]).all()]
         turn_pt += [len(kpoints) - 1]
         label = [self.get_kpoint_label(kpoints[i]) for i in turn_pt]
+        return turn_pt, label
+
+    @staticmethod
+    def set_turning_kpoints_pmg(fname='KPOINTS'):
+        """
+        k点のsamplingの方向が切り替わる位置を読む
+        pmgから生成したkpointsの場合
+        KPOINTSにラベルがふられるのそこから直接読む
+        """
+        with open(fname, 'r') as rfile:
+            lines = rfile.readlines()
+        turn_pt = []
+        label = []
+
+        for i in range(len(lines)):
+            if len(lines[i].split()) == 5:
+                turn_pt.append(i-3)
+                label.append(lines[i].split()[4])
         return turn_pt, label
 
     @staticmethod
@@ -262,14 +395,17 @@ class ProcarNonC(Procar):
         results = []
         for i in range(0, self.num_kpoints):
             one_point = DataBox(self.trim_data(self['kpoint_id'], i+1))
-            sum_energies = 0
-            for energy in one_point.data:
-                if energy['energy'] <= 0:
-                    sum_energies += energy['energy']
-            #print(sum_energies)
-            # orbitals = DataBox(one_point['orbitals_tot'])
+            # sum_energies = 0
+            # for energy in one_point.data:
+            #     if energy['energy'] <= 0:
+            #         sum_energies += energy['energy']
+            orbitals = DataBox(one_point['orbitals_tot'])
+            judge = one_point['energy'] < 0
             # sum_energies = sum(one_point['energy'] * one_point['occupancy']
-            #  * (orbitals['dx2'] + orbitals['dxy']))
+            #                    * (orbitals['dx2'] + orbitals['dxy']))
+            sum_energies = sum(one_point['energy'] * judge
+                               * (orbitals['dx2'] + orbitals['dxy']))
+
             results.append({'kpoint_id': i+1, 'Sum_E': sum_energies})
         return DataBox(results)
 
@@ -472,22 +608,24 @@ class Energy(DataBox):
         dict形式で出力
         """
         path = os.path.dirname(poscar)
-        cova, volume, sum_atoms, elements, num_atoms = self.read_posc(poscar)
+        cova, volume, sum_atoms, elements, num_atoms, spg, spg_num = \
+            self.read_posc(poscar)
         energy, mag, valid = self.get_enemag(oszicar)
         try:
             result = {'c/a': cova, 'energy': energy / sum_atoms,
                       'volume': volume / sum_atoms, 'mag': mag / sum_atoms,
                       'elements': elements, 'num_atoms': num_atoms,
-                      'bool': valid, 'path': path}
+                      'bool': valid, 'path': path,
+                      'spg': spg, 'spg_num': spg_num}
             return result
         except TypeError:
             print(cova, volume, sum_atoms, elements, num_atoms, energy, mag,
                   valid)
 
-    @staticmethod
-    def read_posc(poscar='POSCAR'):
+    def read_posc(self, poscar='POSCAR'):
         """
         Read cova, volume, num_atoms from POSCAR file.
+        spg も読めるように変更
         """
         posc = vaspy.Poscar(poscar)
         latt_a, _, latt_c = posc.get_lattice_length()[0:3]
@@ -496,7 +634,21 @@ class Energy(DataBox):
         elements = posc.elements
         num_atoms = posc.num_atoms
         sum_atoms = sum(num_atoms)
-        return cova, volume, sum_atoms, elements, num_atoms
+        spg, spg_num = self.print_spg(poscar)
+        return cova, volume, sum_atoms, elements, num_atoms, spg, spg_num
+
+    @staticmethod
+    def print_spg(src='POSCAR'):
+        """
+        space group を return
+        """
+        srcpos = Poscar.from_file(src)
+        finder = SpacegroupAnalyzer(srcpos.structure,
+                                    symprec=5e-2, angle_tolerance=8)
+        spg = finder.get_spacegroup_symbol()
+        spg_num = finder.get_spacegroup_number()
+        return spg, spg_num
+
 
     @staticmethod
     def get_enemag(oszicar='OSZICAR'):
@@ -624,15 +776,15 @@ class Energy(DataBox):
         out_lines = "\t".join(keys) + "\n"
         for key in types_dict:
             head = "".join(key.split('_dict')) + "_"
-            label = [head + str(x) for x in self.data[0][key]]
+            label = [head + str(x) for x in sorted(self.data[0][key])]
             alt_label = "\t".join(label)
             out_lines = out_lines.replace(key, alt_label)
         for data in self.data:
             line = []
             for key in keys:
                 if type(data[key]) is dict:
-                    data[key] = "\t".join([str(x) for x
-                                           in data[key].values()])
+                    data[key] = "\t".join([str(data[key][x]) for x
+                                           in sorted(data[key])])
                 line.append(str(data[key]))
             out_lines += "\t".join(line) + "\n"
         return out_lines
@@ -665,12 +817,13 @@ class Energy(DataBox):
         keys = sorted(set(tmp_key), key=tmp_key.index)
 
         for data in data_list:
-            add_dict = {out_key: data.data[1]['elements'][sites[1]]}
+            add_dict = {out_key: data.data[0]['elements'][sites[1]]}
             add_dict.update({x['elements'][sites[0]]: x[out_key]
                              for x in data.data})
             tmp_table.append(add_dict)
         table = DataBox(tmp_table)
         table.output_keys = [out_key] + keys
+        print(table.output_keys)
         return table
 
     def set_formula(self):
@@ -683,6 +836,60 @@ class Energy(DataBox):
                 formula += "{0}$_{1}$".format(elem, i)
             data.update({'formula': formula})
 
+    def alt_elements_from_dir(self):
+        """
+        組成式の入ったelem_...形式のディレクトリ名から
+        elements & num_atoms を再読み込みする
+        """
+        for data in self.data:
+            formula = os.path.basename(data['path']).split('_')[-1]
+            upper = len(re.split('[A-Z]', formula)) - 1
+            meta = r'([A-Z][a-z]*)(\d*)' * upper
+            match = re.match(meta, formula)
+            elements = [match.group(2*i+1) for i in range(upper)]
+            num_atoms = []
+            for i in range(upper):
+                try:
+                    num_atoms.append(int(match.group(i*2+2)))
+                except ValueError:
+                    num_atoms.append(1)
+            ratio = sum(num_atoms) / sum(data['num_atoms'])
+            norm_num_atoms = [x / ratio for x in num_atoms]
+            data['elements'] = elements
+            data['num_atoms'] = norm_num_atoms
+
+    def alt_cova_posstd(self):
+        """
+        poscat_std から c/a を再読みこみする
+        """
+        for data in self.data:
+            path = os.path.join(data['path'], 'POSCAR_std')
+            posc = vaspy.Poscar(path)
+            latt_a, _, latt_c = posc.get_lattice_length()[0:3]
+            cova = latt_c/latt_a
+            data['c/a'] = cova
+
+    def set_mag_each_site(self):
+        """
+        各サイトごとの磁気モーメントを習得
+        label を設定する
+        """
+        for data in self.data:
+            path = os.path.join(data['path'], 'POSCAR')
+            with open(path, 'r') as rfile:
+                lines = rfile.readlines()
+            elements = lines[5].split()
+            nums = lines[6].split()
+            total = sum([int(x) for x in nums])
+            symbols = [i+str(x+1) for i, j in zip(elements, nums)
+                       for x in range(int(j))]
+            path = os.path.join(data['path'], 'OUTCAR')
+            with open(path, 'r') as rfile:
+                lines = rfile.readlines()
+            p = lines.index(" magnetization (x)\n")
+            mag = [float(lines[i].split()[4]) for i in range(p+4, p+4+total)]
+            data['symbol_mag/site'] = symbols
+            data['mag/site'] = mag
 
 class MurnaghanFit(Energy):
     """

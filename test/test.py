@@ -1,12 +1,10 @@
-#Your optional code here
-#You can import some modules or create additional functions
+# -*- coding: utf-8 -*-
 import numpy as np
-import Cython
+from scipy import signal
+import pylab
 
-a = [1,2,3]
-b = [2,3,4]
-c = [5,5,5]
+window = signal.gaussian(300, std=7).reshape(-1, 1)
+window = np.r_[window, window][300/2:300+300/2]
+pylab.plot(window)
+pylab.show()
 
-d = np.array([a,b,c])
-
-print(d.mean(axis=0))

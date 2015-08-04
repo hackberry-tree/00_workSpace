@@ -15,10 +15,13 @@ def main():
     # from bcc to fcc for D03
     rate = 2 ** 0.5
     rate = 1. / (2 ** 0.5)
-    rate = 1.
+    rate = rate * 2
+    rate = 1
+
+    print(rate)
 
     cova_list = Array.frange_stp(0.90*rate, 1.60*rate, 0.05*rate)
-    #cova_list = [1.65, 1.7, 1.75, 1.8]
+    #cova_list = [1.275, 1.325, 1.375]
 
     #cova_list.append(1.00)
     #cova_list.append(1.05)

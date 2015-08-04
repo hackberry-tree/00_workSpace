@@ -1,6 +1,7 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 """test"""
+import numpy as np
 import os
 import math
 import pylab
@@ -18,8 +19,7 @@ from pymatgen.io.cifio import CifParser
 from pymatgen.io.vaspio import Poscar
 
 
-TEST_PATH = ("/Users/enoki/Documents/01_ResearchData/Calculations/"
-             "99_python/01_testRun/")
+TEST_PATH = "/Users/enoki/Researches/Analysis/Codes/01_testRun/"
 
 def main():
     unittest.main()
@@ -28,7 +28,7 @@ def main():
 class TestConvex(unittest.TestCase):
     path = os.path.join(TEST_PATH, 'convex_hull', 'FeNiSi')
 
-    def est_convex(self):
+    def _test_triangle(self):
         point1 = [0, 1, 2]
         point2 = [1, 2, 3]
         point3 = [1, 1, 1]
@@ -59,8 +59,38 @@ class TestConvex(unittest.TestCase):
         bases = FindGS.collect_base_triangles(end_memb, not_end)
 
 
+    def test_icvm(self):
+        """
+        icvm の test
+        """
+        path = os.path.join(TEST_PATH, 'convex_hull', 'icvm')
+        data = convex_hull.iCVM_energies.from_file(
+            os.path.join(path, 'energies.txt'))
 
-    def est_draw_convex_hull(self):
+        end1 = \
+            (data.fract_per_atom[:, [0, 2, 3]] == [3/4, 1/4, 0]).prod(axis=-1) == 1
+        end2 = \
+            (data.fract_per_atom[:, [0, 2, 3]] == [3/4, 0, 1/4]).prod(axis=-1) == 1
+        print(data.enthalpy[end1])
+        print(data.enthalpy[end2])
+
+        data_xyz = np.c_[data.fract_per_atom[:, 2], data.fract_per_atom[:, 3],
+                         data.enthalpy]
+        fig = pylab.figure()
+        ax = Axes3D(fig)
+        pt3d = convex_hull.PlotTriangularCoord(ax)
+        pt3d.plt_dot(data_xyz)
+        pylab.show()
+
+        # no_int = (data.num_atoms[:, 0] == 0)
+        # data_xy = np.c_[data.fract_per_atom[no_int, 2], data.enthalpy[[no_int]]]
+        # print(data_xy)
+        # pylab.plot(data_xy[:, 0], data_xy[:, 1], 'd')
+        # pylab.show()
+
+
+
+    def _test_draw_convex_hull(self):
         data = pylab.loadtxt(self.path, comments='#')
         initial_base = [list(x) for x in data[0:3, [0, 2, 3]]]
         not_base = [list(x) for x in data[3:, [0, 2, 3]]]
@@ -70,9 +100,9 @@ class TestConvex(unittest.TestCase):
         convex_hull.draw_convex_hull(ax, initial_base, not_base,
                                      ['Fe', 'Ni', 'Si'], [-60, 5])
         #pint(not_base)
-        #pylab.show()
+        pylab.show()
 
-    def est_from_pm(self):
+    def _test_from_pm(self):
         """
         MPのデータをプロット
         """
@@ -97,8 +127,8 @@ class TestConvex(unittest.TestCase):
                 ent_list.append(single_data)
         initial_base = [[x[0], x[1], x[3]] for x in ent_list[0:3]]
         not_base = [[x[0], x[1], x[3]] for x in ent_list[3:]]
-        #fig = pylab.figure()
-        #ax = Axes3D(fig)
+        fig = pylab.figure()
+        ax = Axes3D(fig)
         convex_hull.draw_convex_hull(ax, initial_base, not_base,
                                      ['Fe', 'Ni', 'Si'], [-60, 5],
                                      color='magenta')

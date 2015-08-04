@@ -1,7 +1,8 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 """
-convex_hullを作成
+convex_hull を作成
+Ground State を探す
 """
 import copy
 import math
@@ -35,8 +36,8 @@ def draw_convex_hull(ax, initial_base, not_bases, elements,
 
     pt3d = PlotTriangularCoord(ax)
 
-    pt3d.plt_triangle_dot(data, **kwargs)
-    pt3d.outline_base_plot(bases, **kwargs)
+    pt3d.plt_dot(data, **kwargs)
+    pt3d.outline_base_plot(bases)
     if zlim == 'auto':
         zmax = math.floor(max([x[2] for x in data]) / 10) * 10 + 10
         zmin = math.ceil(min([x[2] for x in data]) / 10) * 10 - 10
@@ -105,7 +106,7 @@ class PlotTriangularCoord(object):
         #self.ax.text(0, 0, zlim[0]/2., 'Energy')
         self.ax.text(0.5, math.sqrt(3)/2+0.1, 0, elements[0], size=18)
         #center = np.array([[1/3., 1/3., 0]])
-        #self.plt_triangle_dot(center)
+        #self.plt_dot(center)
         self.ax.text(-0.1, -0.05, 0, elements[1], size=18)
         self.ax.text(1.1, -0.05, 0, elements[2], size=18)
         #self.ax.text(0, 0, zlim[1], zlim[1], size=18)
@@ -122,12 +123,87 @@ class PlotTriangularCoord(object):
             x, y = alt_triangle(triangle[:, 0], triangle[:, 1])
             self.plt_line(x, y, triangle[:, 2], **kwargs)
 
-    def plt_triangle_dot(self, data, **kwargs):
+    def plt_dot(self, data, **kwargs):
         x, y, z = (data[:, i] for i in range(0, 3))
         tri_x, tri_y = alt_triangle(x, y)
         self.ax.scatter3D(np.ravel(tri_x), np.ravel(tri_y), np.ravel(z),
                           **kwargs)
 
+class iCVM_energies(object):
+    """
+    iCVM (i-s 三元系) の energies.txt を取り扱う
+    """
+    VAC_SITE = 'b'
+    def __init__(self, phase, num_atoms, energy, sites):
+        self.num_atoms = num_atoms
+        self.energy = energy
+        self.sites = sites
+        vac = num_atoms[:, {'d': 3, 'b': 1}[self.VAC_SITE]]
+        self.total_atom = sites - vac
+        self.energy_per_atom = energy / self.total_atom
+        self.fract_per_atom = num_atoms / self.total_atom.reshape(-1, 1)
+        self.fract_per_site = num_atoms / sites.reshape(-1, 1)
+        self.enthalpy = self.get_enthalpy()
+
+    @classmethod
+    def from_file(cls, fname):
+        """
+        energies.txt から読み込む
+        """
+        with open(fname, 'r') as rfile:
+            lines = rfile.readlines()
+        phase = [x.split('*')[0] for x in lines]
+        elem_a = np.array(
+            [int(x.split()[0].split('A')[1].split('B')[0]) for x in lines])
+        elem_b = np.array(
+            [int(x.split()[0].split('B')[1].split('C')[0]) for x in lines])
+        elem_c = np.array(
+            [int(x.split()[0].split('C')[1].split('D')[0]) for x in lines])
+        elem_d = np.array([int(x.split()[0].split('D')[1]) for x in lines])
+        energy = np.array([float(x.split()[2]) for x in lines])
+        sites = np.array([int(x.split()[3]) for x in lines])
+        num_atoms = np.c_[elem_a, elem_b, elem_c, elem_d]
+        if not (sites == num_atoms.sum(axis=-1)).all():
+            print('error')
+        return cls(phase, num_atoms, energy, sites)
+
+    def get_enthalpy(self):
+        end1 = \
+            (self.fract_per_atom[:, [0, 2, 3]] == [0, 1, 0]).prod(axis=-1) == 1
+        end2 = \
+            (self.fract_per_atom[:, [0, 2, 3]] == [0, 0, 1]).prod(axis=-1) == 1
+        end3 = \
+            (self.fract_per_atom[:, [0, 2, 3]] == [3/4, 1/4, 0]).prod(axis=-1) == 1
+        end4 = \
+            (self.fract_per_atom[:, [0, 2, 3]] == [3/4, 0, 1/4]).prod(axis=-1) == 1
+
+        ref_i = (self.energy_per_atom[end3] + self.energy_per_atom[end4]) / 2
+
+        ref1 = self.energy_per_atom[end1]
+        ref2 = self.energy_per_atom[end2]
+        ref = (ref1 * self.fract_per_atom[:, 2] +
+               ref2 * self.fract_per_atom[:, 3] +
+               ref_i * self.fract_per_atom[:, 0])
+        return self.energy_per_atom - ref
+
+    def get_enthalpy_per_site(self):
+        end1 = \
+            (self.fract_per_atom[:, [0, 2, 3]] == [0, 1, 0]).prod(axis=-1) == 1
+        end2 = \
+            (self.fract_per_atom[:, [0, 2, 3]] == [0, 0, 1]).prod(axis=-1) == 1
+        end3 = \
+            (self.fract_per_atom[:, [0, 2, 3]] == [3/4, 1/4, 0]).prod(axis=-1) == 1
+        end4 = \
+            (self.fract_per_atom[:, [0, 2, 3]] == [3/4, 0, 1/4]).prod(axis=-1) == 1
+
+        ref_i = (self.energy_per_atom[end3] + self.energy_per_atom[end4]) / 2
+
+        ref1 = self.energy_per_atom[end1]
+        ref2 = self.energy_per_atom[end2]
+        ref = (ref1 * self.fract_per_atom[:, 2] +
+               ref2 * self.fract_per_atom[:, 3] +
+               ref_i * self.fract_per_atom[:, 0])
+        return self.energy_per_atom - ref
 
 
 def alt_triangle(array_x, array_y):
@@ -183,7 +259,6 @@ class ConvertData(object):
         base_ent = [[x[0], x[1], (x[2]-x[0]*ref[0]-x[1]*ref[1]-(1-x[0]-x[1])*ref[2])*96.485344520851] for x in base]
         notbase_ent = [[x[0], x[1], (x[2]-x[0]*ref[0]-x[1]*ref[1]-(1-x[0]-x[1])*ref[2])*96.485344520851] for x in notbase]
         return base_ent, notbase_ent
-
 
 
 class FindGS(object):
@@ -507,6 +582,7 @@ class FindGS(object):
         coeff = cls.coeff_synthetic_vect(base_va, base_vb, vec_point)
         ave_volume = coeff[0] * base_va[3] + coeff[1] * base_vb[3] + base[0][3]
         return ave_volume
+
 
 if __name__ == '__main__':
     pass

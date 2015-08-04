@@ -12,7 +12,7 @@ import numpy as np
 #import vasp_unfold
 from commopy import DataBox
 
-PATH ="/Users/enoki/test_band/Fe3Ga_prim"
+PATH ="/Users/enoki/workspace/test_band/Fe3Ga_prim"
 
 def main():
     """main"""
@@ -63,8 +63,8 @@ def polarized(path='.', procar='PROCAR_band', doscar='DOSCAR_polarized'):
     ax1.set_ylim(-5, 5)
     ax1.set_xlim(0, band['kpoint_id'][-1])
     pylab.xticks(kp_label[0], kp_label[1])
-    #pylab.show()
-    pylab.savefig(os.path.join(path, 'band.eps'))
+    pylab.show()
+    #pylab.savefig(os.path.join(path, 'band.eps'))
 
 
 if __name__ == '__main__':

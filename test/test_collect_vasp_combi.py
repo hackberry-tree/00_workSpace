@@ -2,6 +2,7 @@
 # -*- coding: utf-8 -*-
 """test"""
 import os
+import re
 import glob
 import pylab
 import shutil
@@ -14,13 +15,17 @@ from commopy import Bash
 def main():
     unittest.main()
 
-TEST_PATH = ('/Users/enoki/Documents/01_ResearchData/Calculations/'
-             '99_python/01_testRun/')
+TEST_PATH = '/Users/enoki/Researches/Analysis/Codes/01_testRun/'
 
 class Collect(unittest.TestCase):
     path = os.path.join(TEST_PATH)
 
-    def test_correct_convex_hull_dat(self):
+    def test_alt_elements_from_dir(self):
+        path_list = glob.glob(os.path.join(self.path, 'combi_data', 'elem_*'))
+        data = collect_vasp.Energy(path_list, 'POSCAR', 'OSZICAR')
+        data.alt_elements_from_dir()
+
+    def _test_correct_convex_hull_dat(self):
         path_list = glob.glob(os.path.join(self.path, 'Fe-Ni-Si', '*'))
         data = collect_vasp.Energy(path_list, 'POSCAR', 'OSZICAR')
         data.set_enthalpy()
@@ -29,7 +34,7 @@ class Collect(unittest.TestCase):
         data.output_keys = ['comp_dict_f', 'enthalpy']
         print(data)
 
-    def test_correct_combi_enthalpy(self):
+    def _test_correct_combi_enthalpy(self):
         path_list = glob.glob(os.path.join(self.path, 'combi_data', 'elem_*'))
         data = collect_vasp.Energy(path_list, 'POSCAR', 'OSZICAR')
         data.set_enthalpy()
@@ -59,28 +64,6 @@ class Collect(unittest.TestCase):
         plt.adjust_auto()
         pylab.xlim(-0.5, 20.5)
         plt.plot('show')
-
-
-def clean_prev(path, files):
-    """
-    filesを消去
-    """
-    trush_list = Bash.find_files(path, files)
-    for trush in trush_list:
-        fname = os.path.join(path, trush)
-        os.remove(fname)
-        print("{0} is removed.".format(fname))
-
-
-def clean_prev_dir(path, dirc):
-    """
-    dirctoryを消去
-    """
-    trush_list = Bash.find_files(path, dirc)
-    for trush in trush_list:
-        fname = os.path.join(path, trush)
-        shutil.rmtree(fname)
-        print("{0} is removed.".format(fname))
 
 if __name__ == '__main__':
     main()
