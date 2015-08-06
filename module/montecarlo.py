@@ -25,7 +25,12 @@ class MonteCarlo(object):
         else:
             self.T = T
             self.trans_prob = self.trans_prob_de
-        self.beta = self.kb * self.T
+        # self.beta = self.kb * self.T
+
+    @property
+    def beta(self):
+        return self.kb * self.T
+
 
     @staticmethod
     def trans_prob_test(de):

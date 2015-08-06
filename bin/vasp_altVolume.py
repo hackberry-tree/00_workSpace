@@ -49,19 +49,26 @@ def get_elements(src):
     return elem_counter
 
 def calc_volume(elem_counter):
+    """
+    体積を計算する
+    bcci 用
+    """
     Fe = elem_counter['Fe']
     Cr = elem_counter['Cr']
-    subs = Fe + Cr
+    Ti = elem_counter['Ti']
+    subs = Fe + Cr + Ti
 
     C = elem_counter['C']
 
     Fe_C = 22.863 * (1 - math.exp(-0.52018 * C / (subs)))
     Cr_C = 26.839 * (1 - math.exp(-0.49806 * C / (subs)))
+    Ti_C = 35.809 * (1 - math.exp(-0.30445 * C / (subs)))
 
-    vol = []
-    vol.append((12.518 + Fe_C) * Fe)
-    vol.append((12.870 + Cr_C) * Cr)
-    return sum(vol)
+    vol = 0
+    vol += (12.518 + Fe_C) * Fe
+    vol += (12.870 + Cr_C) * Cr
+    vol += (16.949 + Ti_C) * Ti
+    return vol
 
 def alt_volume(src='POSCAR'):
     srcpos = Poscar.from_file(src)
@@ -78,7 +85,8 @@ def check(path):
     lines = ""
     for dirc in dir_list:
         elem = get_elements(os.path.join(dirc, 'POSCAR'))
-        lines += str(elem['Fe']) + "\t" + str(elem['Cr']) + "\t" + str(elem['C'])
+        # lines += str(elem['Fe']) + "\t" + str(elem['Cr']) + "\t" + str(elem['C'])
+        lines += str(elem['Fe']) + "\t" + str(elem['Ti']) + "\t" + str(elem['C'])
         lines += "\t" + str(calc_volume(elem)) + "\n"
     print(lines)
 

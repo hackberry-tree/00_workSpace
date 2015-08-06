@@ -27,7 +27,7 @@ class Test(unittest.TestCase):  #pylint: disable=R0903
     """
     PATH = os.path.join(TEST_PATH, 'montecarlo/')
 
-    def test_get_entropy_TO(self):
+    def _test_get_entropy_TO(self):
         """
         de を記録して entropy を算出する
         """
@@ -38,7 +38,7 @@ class Test(unittest.TestCase):  #pylint: disable=R0903
         mc.loop_fcc_micro_single(2000)
 
 
-    def _test_flip_de(self):
+    def test_flip_de(self):
         """
         flip de を total energy の変化量と比較
         一致すれば O.K.
@@ -46,8 +46,9 @@ class Test(unittest.TestCase):  #pylint: disable=R0903
         それより小さい場合は direct にエネルギーを求めた方が良い
         """
         path = os.path.join(self.PATH, "AlCu/voldep/4.0/")
+        path = os.path.join(self.PATH, "AlCu/wien/TO/")
         fcc = FCCXtal.from_pickle_ecis(os.path.join(path, 'cluster.pickle'),
-                                       arrange='random', conc=0.8, size=2)
+                                       arrange='random', conc=0.8, size=4)
 
         # s=0, s=1 のサイトを無作為に抽出
         s0 = fcc.cell == 0
@@ -63,6 +64,7 @@ class Test(unittest.TestCase):  #pylint: disable=R0903
         before = fcc.get_energy()
         print(before)
         pred_de = fcc.get_exchange_de_small(site_s0, site_s1)/fcc.size**3/4
+        pred_de = fcc.get_exchange_de(site_s0, site_s1)/fcc.size**3/4
         fcc.cell[tuple(site_s0.T)] = 1
         fcc.cell[tuple(site_s1.T)] = 0
         after = fcc.get_energy()
