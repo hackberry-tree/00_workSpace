@@ -180,7 +180,7 @@ class Test(unittest.TestCase):  #pylint: disable=R0903
         print(pred_de)
         print((de - pred_de) ** 2 < 1e-6)
 
-    def _test_order_AlCu_TO(self):
+    def test_order_AlCu_TO(self):
         """
         規則相のエネルギーを icvm と比較
         null clucter は含まれていないので注意

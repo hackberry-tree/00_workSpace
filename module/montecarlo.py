@@ -29,6 +29,7 @@ class MonteCarlo(object):
 
     @property
     def beta(self):
+        """return beta"""
         return self.kb * self.T
 
 
@@ -48,6 +49,13 @@ class MonteCarlo(object):
         """
         w = np.exp(-de/self.beta)
         return w / (1+w)
+
+    def trans_prob_de2(self, de):
+        """
+        エネルギー差の行列から遷移確率の行列を返す
+        """
+        w = np.exp(-de/self.beta)
+        return w
 
     def loop_fcc_grand(self, steps):
         """
