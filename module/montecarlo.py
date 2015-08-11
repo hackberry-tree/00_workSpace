@@ -3,6 +3,8 @@
 """
 """
 from __future__ import division
+import os
+import re
 import math
 import pickle
 import random
@@ -377,6 +379,127 @@ class MonteCarlo(object):
         return energy
 
 
+class BcciOctaSite(object):
+    """
+    Bcc + Octahedron-interstital 8 点のサイト情報を記録する
+    s-site 2 点 [0:2]
+    i-site 6 点 [3:8]
+    args:
+        spins: spin の配列を記した 8 要素の list
+    cls variables:
+        SPIN: spin 軸の取り方 default: [1, 0]
+        SITES: 各サイトの座標
+        CONC_SUB: s-site の SPIN[0] の濃度
+        CONC_INT: i-site の SPIN[0] の濃度
+    """
+    SPIN = [1, 0]
+    _site_s0 = [0.0, 0.0, 0.0]
+    _site_s1 = [1/2, 1/2, 1/2]
+    _site_i0 = [1/2, 0.0, 0.0]
+    _site_i1 = [0.0, 1/2, 0.0]
+    _site_i2 = [0.0, 0.0, 1/2]
+    _site_i3 = [0.0, 1/2, 1/2]
+    _site_i4 = [1/2, 0.0, 1/2]
+    _site_i5 = [1/2, 1/2, 0.0]
+    SITES = [_site_s0, _site_s1, _site_i0, _site_i1,
+             _site_i2, _site_i3, _site_i4, _site_i5]
+    CONC_INT = 0.5
+    CONC_SUB = 0.5
+    LABEL = {0: 'C', 1: 'C', 2: 'A', 3: 'A',
+             4: 'A', 5: 'A', 6: 'A', 7: 'A'}
+    EQUIV = {0: 'C', 1: 'C', 2: 'A1', 3: 'A2',
+             4: 'A3', 5: 'A1', 6: 'A2', 7: 'A3'}
+
+    def __init__(self, spins):
+        self.spins = spins
+
+    @classmethod
+    def conv_site2idex(cls, site):
+        """
+        座標の直接表記を class 内の index 表記に変換して return する
+        """
+        index = [math.floor(x) for x in site]
+        decim = [x - math.floor(x) for x in site]
+        index.append({tuple(cls.SITES[i]): i
+                      for i in range(len(cls.SITES))}[tuple(decim)])
+        return index
+
+    @classmethod
+    def random(cls, _):
+        """
+        spin を site に random に配置する
+        cls.CONC_INT と cls.CONC_SUB で i-, s-site の濃度を指定する
+        """
+        i = cls.CONC_INT
+        s = cls.CONC_SUB
+        spins = [cls.SPIN[int(round(random.uniform(0.5-s/2., 1-s/2.)))]
+                 for _ in range(4)] + \
+                [cls.SPIN[int(round(random.uniform(0.5-i/2., 1-i/2.)))]
+                 for _ in range(4)]
+        return cls(spins)
+
+    @classmethod
+    def BCC_u(cls, _):
+        """
+        BCC 構造
+        s-site が up-spin
+        """
+        i, j = cls.SPIN
+        spins = [i, i, j, j, j, j, j, j]
+        return cls(spins)
+
+    @classmethod
+    def BCC_d(cls, _):
+        """
+        BCC 構造
+        s-site が up-spin
+        """
+        i, j = cls.SPIN
+        spins = [j, j, j, j, j, j, j, j]
+        return cls(spins)
+
+    @classmethod
+    def A3C(cls, _):
+        i, j = cls.SPIN
+        spins = [i, i, i, i, i, i, i, i]
+        return cls(spins)
+
+    @classmethod
+    def A3D(cls, _):
+        i, j = cls.SPIN
+        spins = [j, j, i, i, i, i, i, i]
+        return cls(spins)
+
+    @classmethod
+    def A2D(cls, _):
+        i, j = cls.SPIN
+        spins = [j, j, i, j, i, i, j, i]
+        return cls(spins)
+
+    @classmethod
+    def A1D(cls, _):
+        i, j = cls.SPIN
+        spins = [j, j, j, i, j, j, i, j]
+        return cls(spins)
+
+    @classmethod
+    def A2C(cls, _):
+        i, j = cls.SPIN
+        spins = [i, i, j, i, i, j, i, i]
+        return cls(spins)
+
+    @classmethod
+    def A1C(cls, _):
+        i, j = cls.SPIN
+        spins = [i, i, j, j, i, j, j, i]
+        return cls(spins)
+
+    @classmethod
+    def ACD(cls, _):
+        i, j = cls.SPIN
+        spins = [j, i, i, j, j, i, j, j]
+        return cls(spins)
+
 class NaClSite(object):
     """
     NaCl型の 8 点のサイトの情報を記録する
@@ -419,11 +542,10 @@ class NaClSite(object):
         return index
 
     @classmethod
-    def random(cls):
+    def random(cls, _):
         """
         spin を site に random に配置する
         cls.CONC_INT と cls.CONC_SUB で i-, s-site の濃度を指定する
-        ToDo: cls.SPIN に対応させる
         """
         i = cls.CONC_INT
         s = cls.CONC_SUB
@@ -434,7 +556,7 @@ class NaClSite(object):
         return cls(spins)
 
     @classmethod
-    def FCC_u(cls):
+    def FCC_u(cls, _):
         """
         FCC 構造
         s-site が up-spin
@@ -444,7 +566,7 @@ class NaClSite(object):
         return cls(spins)
 
     @classmethod
-    def FCC_d(cls):
+    def FCC_d(cls, _):
         """
         FCC 構造
         s-site が down-spin
@@ -454,7 +576,7 @@ class NaClSite(object):
         return cls(spins)
 
     @classmethod
-    def L10(cls):
+    def L10(cls, _):
         """
         L10 構造
         """
@@ -463,7 +585,7 @@ class NaClSite(object):
         return cls(spins)
 
     @classmethod
-    def L12_A(cls):
+    def L12_A(cls, _):
         """
         A3B L12 構造
         """
@@ -472,7 +594,7 @@ class NaClSite(object):
         return cls(spins)
 
     @classmethod
-    def NaCl_uu(cls):
+    def NaCl_uu(cls, _):
         """
         NaCl 型構造
         i-, s-site ともに up-spin
@@ -482,7 +604,7 @@ class NaClSite(object):
         return cls(spins)
 
     @classmethod
-    def NaCl_du(cls):
+    def NaCl_du(cls, _):
         """
         NaCl型構造
         i-site down-spin, s-site up-spin
@@ -525,15 +647,14 @@ class NaClXtal(object):
                         これをやらないと重複して相関関数を数えてしまうので、
                         total energy が変わってしまう
     """
-    def __init__(self, size, arrange='random',
-                 conc_sub=0.5, conc_int=0.5, ecis=None):
+    def __init__(self, size, arrange='random', conc=(0.5, 0.5), ecis=None):
         self.size = size
-        NaClSite.CONC_INT = conc_int
-        NaClSite.CONC_SUB = conc_sub
+        NaClSite.CONC_SUB = conc[0]
+        NaClSite.CONC_INT = conc[1]
         mode = {'random': NaClSite.random, 'L10': NaClSite.L10,
                 'FCC_u': NaClSite.FCC_u, 'NaCl_uu': NaClSite.NaCl_uu,
                 'FCC_d': NaClSite.FCC_d, 'NaCl_du': NaClSite.NaCl_du,}[arrange]
-        self.cell = np.array([[[mode().spins for z in range(size)]
+        self.cell = np.array([[[mode(conc).spins for z in range(size)]
                                for y in range(size)] for x in range(size)])
 
         self.COORDS = np.fromiter(chain.from_iterable(
@@ -578,8 +699,8 @@ class NaClXtal(object):
         return index - obj
 
     @classmethod
-    def from_pickle_ecis(cls, fname, size=10, arrange='random',
-                         conc_sub=0.5, conc_int=0.5):
+    def from_pickle_ecis(cls, fname, size=10,
+                         arrange='random', conc=(0.5, 0.5)):
         """
         ecis や cluster の情報が入った pickle data から cls を生成
         load する pickle data の format
@@ -590,7 +711,7 @@ class NaClXtal(object):
         """
         with open(fname, 'rb') as rbfile:
             ecis_data = pickle.load(rbfile)
-        return cls(size, arrange, conc_sub, conc_int, ecis_data)
+        return cls(size, arrange, conc, ecis_data)
 
     def get_xi_sub(self):
         """
@@ -609,7 +730,6 @@ class NaClXtal(object):
             spins = self.cell[idxs].T
             xi = spins.prod(axis=-1).mean(axis=-1)
             print(xi.mean())
-
 
     def get_energy(self):
         """
@@ -743,6 +863,147 @@ class NaClXtal(object):
         return real_coords
 
 
+class SubLattXtal(object):
+    """
+    二副格子型の結晶格子を作成する
+    各サイトは index 表記になっているため、座標の参照の仕方が面倒
+    4 番目のコラムが unit cell 内の site の index
+
+    0 以外の site から参照する際に self.TRANS を利用する
+    例として、site-1 から site-2 を参照させる場合
+    self.TRANS[1, 2] を index に足し合わせる
+    (直感的に分かりづらいのが問題)
+
+    args:
+        size: cell のsize size^3*8sites を作成する
+        arrange: 原子配列の初期値
+                 選択肢は mode を参照
+        conc: up-spinの組成比の初期値
+              arrange=random のみ使用
+              (第一副格子, 第二副格子) の順
+        ecis: ECIs
+              format は list形式
+              第一、第二副格子の順で格納した
+              dict形式eciの情報を持つ (CEMParserから作成する)
+    variables:
+        nodup_int_ecis: i-site の ecis で s-site と重複していないもののlist
+                        total energy を算出する際に使用
+                        これをやらないと重複して相関関数を数えてしまうので、
+                        total energy が変わってしまう
+        TRANS: 相対座標
+               原点を別の座標にとった際、他の座標を参照する際に使用
+               [新しい原点の座標, 参照する座標]として記述している
+               例: site3からsite2を参照する場合
+                   + [1, 0, 0, -1]した座標がそのサイトになる
+        COORDS: 全ての格子点の座標 (site_id は 0 のみ)
+    """
+    def __init__(self, size, ecis, site_class, arrange='random', conc=None):
+        self.size = size
+        mode = {'random': site_class.random,
+                'BCC_u': site_class.BCC_u,
+                'BCC_d': site_class.BCC_d,
+                'A3C': site_class.A3C, 'A3D': site_class.A3D,
+                'A2C': site_class.A2C, 'A2D': site_class.A2D,
+                'A1C': site_class.A1C, 'A1D': site_class.A1D,
+                'ACD': site_class.ACD}[arrange]
+
+        self.cell = np.array([[[mode(conc).spins for z in range(size)]
+                               for y in range(size)] for x in range(size)])
+
+        self.site_class = site_class
+
+        self.COORDS = np.fromiter(chain.from_iterable(
+            product(range(0, self.size), repeat=3)), np.int).reshape(-1, 3)
+        self.COORDS = np.c_[self.COORDS,
+                            np.zeros_like(
+                                self.COORDS[:, 0], np.int)].reshape(-1, 1, 1, 4)
+        self.TRANS = self.get_trans()
+        # print(self.TRANS)
+
+        self.clusters = [ecis[site_class.EQUIV[i]][0][1:]
+                         for i in range(len(site_class.SITES))]
+        self.ecis = [ecis[site_class.EQUIV[i]][1][1:]
+                     for i in range(len(site_class.SITES))]
+        self.eci_point = [ecis[site_class.EQUIV[i]][1][0]
+                          for i in range(len(site_class.SITES))]
+        self.idxs = [self.get_clus_idxs(clusters)
+                     for clusters in self.clusters]
+        self.nodup_int_ecis = []
+        for e in self.ecis[2]:
+            if e in self.ecis[0]:
+                self.nodup_int_ecis.append(0)
+            else:
+                self.nodup_int_ecis.append(e)
+        self.ecis[2] = self.nodup_int_ecis
+        self.ecis[5] = self.nodup_int_ecis
+        self.ecis[3] = self.nodup_int_ecis
+        self.ecis[6] = self.nodup_int_ecis
+        self.ecis[4] = self.nodup_int_ecis
+        self.ecis[7] = self.nodup_int_ecis
+
+    def get_trans(self):
+        """
+        相対座標へ変換するための matrix を return する
+        """
+        sites = np.array(self.site_class.SITES)
+        size = sites.shape[0]
+        tmp = sites.reshape(size, 1, 3) + sites.reshape(1, size, 3)
+        index = np.array([[self.site_class.conv_site2idex(x)
+                           for x in y] for y in tmp])
+        obj = np.c_[
+            np.zeros_like(np.arange(size*3).reshape(size, 3)), np.arange(size)]
+        return index - obj
+
+    def get_clus_idxs(self, clusters):
+        """
+        fancy index に用いる cluster の index を list 化して return する
+        index の shape は
+        cluster種 × 参照する座標 × クラスターの頂点 ×
+            対称操作で複製されたクラスター × すべての座標
+        """
+        indexes = []
+        for clus in clusters:
+            size = clus.shape
+            tmp_pos = []
+            for site_id in range(8):
+                pos = clus + self.TRANS[site_id][clus[..., 3]] + \
+                    self.COORDS
+                tmp_pos.append(pos)
+            index = np.array(tmp_pos).reshape(
+                8*self.size**3, size[0], size[1], 4)
+            index[..., 0:3] %= self.size
+            indexes.append(tuple(index.T))
+        return indexes
+
+    def get_energy(self):
+        """
+        siteに仮想的に spin=1 を入れて、その周囲の相関関数を計算
+        ecis との積から サイト毎のエネルギーを計算する
+        """
+        energy = np.zeros_like(
+            np.arange(self.size**3*8).
+            reshape(self.size, self.size, self.size, 8))
+
+        dummy = np.zeros_like(
+            np.arange(self.size**3*8).
+            reshape(8, self.size, self.size, self.size))
+        energy = energy.reshape(self.size**3*8)
+        for i in range(len(self.ecis)):
+            for idxs, eci in zip(self.idxs[i], self.ecis[i]):
+                spins = self.cell[idxs].T
+                xi = spins.prod(axis=-1).mean(axis=-1)
+                dummy00 = dummy.copy()
+                dummy00[i, :, :, :] = 1
+                dummy00 = dummy00.reshape(self.size**3*8)
+                energy = (xi * eci * dummy00) + energy
+        energy = energy.reshape(8, -1).T.reshape(
+            self.size, self.size, self.size, 8)
+        energy[:, :, :, 0:2] += self.eci_point[0]
+        energy[:, :, :, 2:8] += self.eci_point[2]
+        return (energy*self.cell)[:, :, :, 0:2].mean() + \
+            (energy*self.cell)[:, :, :, 2:8].mean()
+
+
 class QuadSite(object):
     """
     4点のサイトの情報を記述する
@@ -828,8 +1089,8 @@ class FCCXtal(object):
     conc: A, B 二元系におけるAの濃度の初期値 (random以外では不使用)
     other variables
         TRANS: 相対座標
-               原点を別の副格子にとった際、他の座標を参照する際に使用
-               [新しい原点の副格子, 参照する副格子]として記述している
+               原点を別の座標にとった際、他の座標を参照する際に使用
+               [新しい原点の座標, 参照する座標]として記述している
                例: site3からsite2を参照する場合
                    + [1, 0, 0, -1]した座標がそのサイトになる
         COORDS: 全ての格子点の座標 (site_id は 0 のみ)
@@ -844,7 +1105,6 @@ class FCCXtal(object):
     (get_clus.py の時点で分離しておく)
     また 各クラスターの原点の座標 [0, 0, 0, 0] も取り除く
     """
-
     def __init__(self, size, arrange='random', conc=0.5, ecis=None):
         self.size = size
         mode = {'random': QuadSite.random, 'L10': QuadSite.L10,
@@ -863,6 +1123,7 @@ class FCCXtal(object):
             self.ecis = ecis['ecis']
             self.eci_point = ecis['eci_point']
             self.idxs = self.get_clus_idxs(self.clusters)
+
 
     @classmethod
     def from_pickle_ecis(cls, fname, size=10, arrange='random', conc=0.5):
@@ -1085,3 +1346,477 @@ class FCCXtal(object):
     def get_conc(self):
         return self.cell.mean()
 
+
+class CEMParser(object):
+    """
+    CEM の結果を読んで cluster, eci の情報を取り扱う
+    Bcci に関しては対称操作が i-site 位置によって異なることが問題になる
+    そこで clusters & ecis の組み合わせは各サイト毎の data として取り扱う
+    したがって、 8 つの clusters, ecis のセットを作成する
+    時間ができたら、他の class もこの方式に統一したい
+    """
+    @classmethod
+    def get_unique(cls, clus, site_class):
+        """
+        対象操作を行って
+        重複を削除
+        サイトの表記を site_class に基づいた index 表記に変換
+        """
+        unique_clus = []
+        for i in range(len(clus[0])):
+            sym_dups = cls._symm_cubic(clus[0][i], clus[1][i])
+            sym_uni = cls._rm_dup(sym_dups)
+            unique_clus.append(
+                np.array([[site_class.conv_site2idex(site) for site in cluster]
+                          for cluster in sym_uni]))
+        return unique_clus
+
+    @staticmethod
+    def _symm_cubic(sites, equiv_pos=None):
+        """
+        対称操作で等価なサイトを作成する
+        重複は考慮しない
+        立方晶の method
+        n体中の等価なサイトmにつき、どこを原点にするかという並進対称操作も必要
+        m × 48 パターンを作成する
+        副格子系は equiv_pos が必要
+        args:
+            sites: n体クラスターの座標 [n*3 of array]
+            equiv_pos: 原点と等価なサイト位置 [m of list]
+        """
+        nbody = sites.shape[0]
+        sites_t = []
+        double = np.r_[sites, sites]
+        # 先頭のサイトは常に[0, 0, 0]
+        if not equiv_pos:
+            equiv_pos = range(nbody)
+        for i in equiv_pos:
+            sites_t.append((double - sites[i])[i:i+nbody])
+        sites_t = np.array(sites_t)
+
+        symm_r = np.array([[0, 1, 2], [1, 0, 2], [0, 2, 1],
+                           [1, 2, 0], [2, 0, 1], [2, 1, 0]])
+        sites_r = []
+        for site in sites_t:
+            for symm in symm_r:
+                sites_r.append(site[:, symm])
+        sites_r = np.array(sites_r)
+
+        symm_m = np.array([[1, 1, 1], [-1, 1, 1], [1, -1, 1], [1, 1, -1],
+                           [-1, -1, 1], [-1, 1, -1], [1, -1, -1], [-1, -1, -1]])
+        return (sites_r * symm_m.reshape(8, 1, 1, 3)).reshape(48*len(equiv_pos),
+                                                              nbody, 3)
+
+    @classmethod
+    def symm_cubic_bcci(cls, sites, site_class):
+        """
+        対称操作で等価なサイトを作成する
+        重複は考慮しない
+        立方晶の method
+        n体中の等価なサイト m につき、どこを原点にするかという並進対称操作も必要
+        等価なサイトは site_class から読み取る
+        m × 48 パターンを作成する
+        args:
+            sites: n体クラスターの座標 [n*3 of array]
+            equiv_pos: 原点と等価なサイト位置 [m of list]
+        """
+        nbody = sites.shape[0]
+        symm_r = np.array([[0, 1, 2], [1, 0, 2], [0, 2, 1],
+                           [1, 2, 0], [2, 0, 1], [2, 1, 0]])
+        sites_r = []
+        for symm in symm_r:
+            for site in sites:
+                sites_r.append(site[symm])
+        sites_r = np.array(sites_r)
+        symm_m = np.array([[1, 1, 1], [-1, 1, 1], [1, -1, 1], [1, 1, -1],
+                           [-1, -1, 1], [-1, 1, -1], [1, -1, -1], [-1, -1, -1]])
+        sites_rm = (sites_r * symm_m.reshape(8, 1, 1, 3)).reshape(48, nbody, 3)
+        equiv_label = [[site_class.EQUIV[site_class.conv_site2idex(site)[3]]
+                        for site in cluster] for cluster in sites_rm]
+        clusters = {}
+        for label in ['C', 'A1', 'A2', 'A3']:
+            tmp = []
+            for s, eq in zip(sites_rm, equiv_label):
+                for i in range(len(eq)):
+                    double = np.r_[s, s]
+                    if eq[i] == label:
+                        tmp.append((double - s[i])[i:i+nbody])
+            if tmp:
+                tmp = cls.rm_dup(np.array(tmp))
+            clusters.update({label: tmp})
+        return clusters
+
+    @staticmethod
+    def _symm_tetra(sites, equiv_pos=None, uniaxis='a'):
+        """
+        対称操作で等価なサイトを作成する
+        重複は考慮しない
+        正方晶の method
+        n体のクラスターにつき、どこを原点にするかという並進対称操作も必要
+        n体 × 16 パターンを作成する
+        args:
+            sites: n体クラスターの座標 [n*3 of array]
+            uniax: 正方晶の 4 回対称軸方向を指定する
+                   'a' or 'b' or 'c'
+        """
+        nbody = sites.shape[0]
+        sites_t = []
+        double = np.r_[sites, sites]
+        # 先頭のサイトは常に[0, 0, 0]
+        if not equiv_pos:
+            equiv_pos = range(nbody)
+        for i in equiv_pos:
+            sites_t.append((double - sites[i])[i:i+nbody])
+        sites_t = np.array(sites_t)
+
+        symm_r = {'a': np.array([[0, 1, 2], [0, 2, 1]]),
+                  'b': np.array([[0, 1, 2], [2, 1, 0]]),
+                  'c': np.array([[0, 1, 2], [1, 0, 2]])}[uniaxis]
+        sites_r = []
+        for site in sites_t:
+            for symm in symm_r:
+                sites_r.append(site[:, symm])
+        sites_r = np.array(sites_r)
+
+        symm_m = np.array([[1, 1, 1], [-1, 1, 1], [1, -1, 1], [1, 1, -1],
+                           [-1, -1, 1], [-1, 1, -1], [1, -1, -1], [-1, -1, -1]])
+        return (sites_r * symm_m.reshape(8, 1, 1, 3)).reshape(
+            16*len(equiv_pos), nbody, 3)
+
+    @staticmethod
+    def _rm_dup(items):
+        """
+        重複する要素を除外する
+
+        以下手順
+        1. 第一カラム([0, 0, 0])を除去して list 化する
+        2. 各要素をソートする
+        3. 重複を除外する
+        4. 第一カラムに[0,0,0]を戻してreturn
+        """
+        # 1.
+        list_i = []
+        for item in items[:, 1:, :]:
+            li = [list(x) for x in item]
+            list_i.append(li)
+        # 2.
+        sorted_items = [sorted(y) for y in list_i]
+        # 3.
+        unique = []
+        for item in sorted_items:
+            if not item in unique:
+                unique.append(item)
+        # 4.
+        out = [[[0, 0, 0]] + x for x in unique]
+
+        return out
+
+    @staticmethod
+    def rm_dup(items):
+        """
+        重複する要素を除外する
+
+        以下手順
+        1. 第一カラム([0, 0, 0])を除去して list 化する
+        2. 各要素をソートする
+        3. 重複を除外する
+        """
+        # 1.
+        list_i = []
+        for item in items[:, 1:, :]:
+            li = [list(x) for x in item]
+            list_i.append(li)
+        # 2.
+        sorted_items = [sorted(y) for y in list_i]
+        # 3.
+        unique = []
+        for item in sorted_items:
+            if not item in unique:
+                unique.append(item)
+        return unique
+
+    @classmethod
+    def from_dirc_std(cls, dirc, site_class):
+        """
+        dirctory を指定して
+        cluster の形 (site) を log.txt から、
+        ecis を ecis.txt から読む
+        表記法が conventional のケース
+        """
+        clus = cls.parse_logtxt_std(os.path.join(dirc, "log.txt"))
+        ecis = cls.parse_ecitxt(os.path.join(dirc, 'eci.txt'))
+        clus = [clus[i] for i in sorted(ecis.keys())]
+        ecis = [ecis[i] for i in sorted(ecis.keys())]
+        clus_out = [np.array([[site_class.conv_site2idex(site) for site in cl]
+                              for cl in cluster]) for cluster in clus]
+        # print(clus_out)
+        with open(os.path.join(dirc, "cluster.pickle"), 'wb') as wbfile:
+            pickle.dump({'clusters': clus_out[1:], 'ecis': ecis[1:],
+                         'eci_point': ecis[0]}, wbfile)
+
+    @classmethod
+    def from_dirc_prim_fcc(cls, dirc, site_class):
+        """
+        dirctory を指定して
+        cluster の形 (site) を log.txt から、
+        ecis を ecis.txt から読む
+        表記法が conventional のケース
+        """
+        clus = cls.parse_logtxt_prim_fcc(os.path.join(dirc, "log.txt"))
+        ecis = cls.parse_ecitxt(os.path.join(dirc, 'eci.txt'))
+        clus = [clus[i] for i in sorted(ecis.keys())]
+        ecis = [ecis[i] for i in sorted(ecis.keys())]
+        clus_out = [np.array([[site_class.conv_site2idex(site) for site in cl]
+                              for cl in cluster]) for cluster in clus]
+        with open(os.path.join(dirc, "cluster.pickle"), 'wb') as wbfile:
+            pickle.dump({'clusters': clus_out[1:], 'ecis': ecis[1:],
+                         'eci_point': ecis[0]}, wbfile)
+
+    @classmethod
+    def from_dirc_2sub(cls, dirc, site_class):
+        """
+        dirctory を指定して
+        2 副格子のモデルを読み込む
+        """
+        clus, pos = cls.parse_logtxt_2sub(os.path.join(dirc, "log.txt"))
+        ecis = cls.parse_ecitxt(os.path.join(dirc, 'eci.txt'))
+        clus_dict = cls.extract_used_cluster(clus, pos, ecis)
+        a = cls.get_unique(clus_dict['a'], site_class)
+        c = cls.get_unique(clus_dict['c'], site_class)
+        eci_a = clus_dict['a'][2]
+        eci_c = clus_dict['c'][2]
+        # print(a)
+        with open(os.path.join(dirc, "cluster.pickle"), 'wb') as wbfile:
+            pickle.dump({'sub_clusters': c, 'int_clusters': a,
+                         'sub_ecis': eci_c, 'int_ecis': eci_a}, wbfile)
+
+    @classmethod
+    def from_dric_bcci(cls, dirc, site_class):
+        """
+        dirctory を指定して
+        bcci の構造を読み込む
+        """
+        pass
+
+    @staticmethod
+    def extract_used_cluster(cluster, clpos, ecis):
+        """
+        eci_ids に表記のある cluster のみを抜き出す
+        """
+        c_id = [i for i in sorted(ecis.keys()) if i in clpos[0]]
+        a_id = [i for i in sorted(ecis.keys()) if i in clpos[2]]
+        try:
+            c_cls = [cluster[i] for i in c_id]
+        except IndexError:
+            print(len(cluster))
+            print(c_id)
+        c_ord = [clpos[1][i] for i in c_id]
+        c_ecis = [ecis[i] for i in c_id]
+        a_cls = [cluster[i] for i in a_id]
+        a_ord = [clpos[3][i] for i in a_id]
+        a_ecis = [ecis[i] for i in a_id]
+        return {'c':[c_cls, c_ord, c_ecis], 'a':[a_cls, a_ord, a_ecis]}
+
+    @staticmethod
+    def meta_2sub(lines):
+        """
+        clusterの形状が記された位置 init - midle と
+        clusterの元素種が記された位置 midle - end を re モジュールをつかって
+        return する
+        """
+        meta_init = re.compile(r"number of clusters in DISORDERED STATE: .*")
+        init = -1
+        while not meta_init.match(lines[init]):
+            init -= 1
+        midle = init + 1
+        meta_midle = re.compile(r"CF:     clust# clust#   dcrtn# #var- degen  dcrtn.*")
+        while not meta_midle.match(lines[midle]):
+            midle += 1
+        end = midle + 1
+        meta_end = re.compile(r"\*ECLI\*.*")
+        while not meta_end.match(lines[end]):
+            end += 1
+        return init, midle, end
+
+    @classmethod
+    def parse_logtxt_2sub(cls, fname):
+        """
+        cluster の site を log.txt から読み込む
+        i-s 用
+        """
+        with open(fname, 'r') as rfile:
+            lines = rfile.readlines()
+
+        init, midle, end = cls.meta_2sub(lines)
+
+        clus = []
+        for i in range(init+1, midle-1):
+            if lines[i].split()[0] == 'cluster:':
+                clus.append(np.array([[float(y) for y in x.split()]
+                                      for x in lines[i+1:i+4]]).T)
+
+        tmp = [line.split()[6] for line in lines[midle+2: end-4]]
+        # print(tmp[0], tmp[-1]) # 最初と最後の pos が一致するか check
+        pos_c = [[i for i in range(len(x)) if x[i] == 'C'] for x in tmp]
+        in_c = [i for i in range(len(tmp)) if pos_c[i]]
+        pos_a = [[i for i in range(len(x)) if x[i] == 'A'] for x in tmp]
+        in_a = [i for i in range(len(tmp)) if pos_a[i]]
+
+        return clus, (in_c, pos_c, in_a, pos_a)
+
+    @classmethod
+    def parse_logtxt_bcci(cls, fname):
+        """
+        bcci の site を log.txt から読み込む
+        """
+        with open(fname, 'r') as rfile:
+            lines = rfile.readlines()
+
+        init, midle, _ = cls.meta_2sub(lines)
+
+        clus = []
+        for i in range(init+1, midle-1):
+            if lines[i].split()[0] == 'cluster:':
+                clus.append(np.array([[float(y) for y in x.split()]
+                                      for x in lines[i+1:i+4]]).T)
+        return clus
+
+    @classmethod
+    def compare_pos_vs_clus(cls, fname, site_class):
+        """
+        sublattice の表記で
+        log.txtから与えられた元素種と site 位置から判別した元素種とが一致するか
+        check 用の method
+        """
+        with open(fname, 'r') as rfile:
+            lines = rfile.readlines()
+        _, midle, end = cls.meta_2sub(lines)
+        log = [line.split()[6] for line in lines[midle+2: end-4]]
+        clus = cls.parse_logtxt_bcci(fname)
+        l = site_class.LABEL
+        conv = ["".join([l[site_class.conv_site2idex(site)[3]]
+                         for site in cluster])
+                for cluster in clus]
+        judge = []
+        for label1, label2 in zip(log, conv):
+            judge.append(label1 == label2)
+        return judge
+
+
+    @classmethod
+    def parse_logtxt_std(cls, path):
+        """
+        log.txt を parse して cluster 群を return する
+        表記方法が conventional cell 用
+        以下手順
+        1. ファイルの読み込み
+        2. meta を使って cluster の情報が記載されている位置を習得
+        3. parse
+        4. 対称操作で cluster を複製、重複しないもののみを抜き出す
+           また原点の座標は削除して return する
+        """
+        # 1.
+        with open(path, 'r') as rfile:
+            lines = rfile.readlines()
+        # 2.
+        meta_init = re.compile(r"number of clusters in DISORDERED STATE: .*")
+        init = 0
+        while not meta_init.match(lines[init]):
+            init += 1
+        end = init + 1
+        meta_end = re.compile(r"Species represented in concentration vector: .*")
+        while not meta_end.match(lines[end]):
+            end += 1
+        # 3.
+        tmp_clus = []
+        for i in range(init+1, end-1):
+            if lines[i].split()[0] == 'cluster:':
+                tmp_clus.append(np.array([[float(y) for y in x.split()]
+                                          for x in lines[i+1:i+4]]).T)
+        # 4.
+        clus = [[x[1:] for x in cls._rm_dup(cls._symm_cubic(sub_clus))]
+                for sub_clus in tmp_clus]
+
+        return clus
+
+    @classmethod
+    def parse_logtxt_prim_fcc(cls, path):
+        """
+        log.txt を parse して cluster 群を return する
+        表記方法が primitive fcc cell 用
+        以下手順
+        1. ファイルの読み込み
+        2. meta を使って cluster の情報が記載されている位置を習得
+        3. parse
+        4. デカルト座標に変換
+        5. 対称操作で cluster を複製、重複しないもののみを抜き出す
+           また原点の座標は削除して return する
+        """
+        # 1.
+        with open(path, 'r') as rfile:
+            lines = rfile.readlines()
+        # 2.
+        meta_init = re.compile(r"number of clusters in DISORDERED STATE: .*")
+        init = 0
+        while not meta_init.match(lines[init]):
+            init += 1
+        end = init + 1
+        meta_end = re.compile(r"Species represented in concentration vector: .*")
+        while not meta_end.match(lines[end]):
+            end += 1
+        # 3.
+        prim = []
+        for i in range(init+1, end-1):
+            if lines[i].split()[0] == 'cluster:':
+                prim.append(np.array([[float(y) for y in x.split()]
+                                      for x in lines[i+1:i+4]]).T)
+        axis = np.array([[1/2, 1/2, 0], [1/2, 0, 1/2], [0, 1/2, 1/2]])
+        # 4.
+        tmp_clus = [np.array([(axis * cood.T).sum(-1).T for cood in clus])
+                    for clus in prim]
+        # print(prim)
+        # print(tmp_clus)
+
+        # 5.
+        clus = [[x[1:] for x in cls._rm_dup(cls._symm_cubic(sub_clus))]
+                for sub_clus in tmp_clus]
+
+        return clus
+
+    @staticmethod
+    def conv_NaCl(site):
+        """
+        NaCl site の表記に変換する
+        dcimal to integer
+        """
+        integ = []
+        decim = []
+        for coord in site:
+            integ.append(math.floor(coord))
+            decim.append(coord - math.floor(coord))
+        site_id = {(0.0, 0.0, 0.0): 0, (0.0, 0.5, 0.5): 1,
+                   (0.5, 0.0, 0.5): 2, (0.5, 0.5, 0.0): 3,
+                   (0.5, 0.0, 0.0): 4, (0.0, 0.5, 0.0): 5,
+                   (0.0, 0.0, 0.5): 6, (0.5, 0.5, 0.5): 7}[tuple(decim)]
+        integ.append(site_id)
+        return integ
+
+    @staticmethod
+    def parse_ecitxt(fname):
+        """
+        null クラスターは flip に関与しないので削除する
+        clus_pos と対応させるために id は -1 する
+        """
+        with open(fname, 'r') as rfile:
+            lines = rfile.readlines()
+        # num_cls = int(lines[0].split()[0])
+        pos = lines.index(" 0.000000\n")
+        cls_ids = []
+        for i in range(1, pos):
+            cls_ids += [int(x) - 1 for x in lines[i].split()]
+        ecis = []
+        for i in range(pos+1, len(lines)):
+            ecis += [float(x) for x in lines[i].split()]
+        ecis_dict = {i:x for i, x in zip(cls_ids, ecis)}
+        ecis_dict.pop(-1)
+        return ecis_dict

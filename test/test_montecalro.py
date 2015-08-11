@@ -6,7 +6,8 @@
 import os
 import unittest
 from benchmarker import Benchmarker
-from montecarlo import MonteCarlo, NaClXtal, FCCXtal
+from montecarlo import MonteCarlo, NaClXtal, FCCXtal, CEMParser, SubLattXtal
+from montecarlo import QuadSite, NaClSite, BcciOctaSite
 import numpy as np
 
 __date__ = "Aug 4 2015"
@@ -27,6 +28,133 @@ class Test(unittest.TestCase):  #pylint: disable=R0903
     """
     PATH = os.path.join(TEST_PATH, 'montecarlo/')
 
+    def _test_compare_pos_vs_clus_bcci(self):
+        """
+        bcciにて
+        log.txtから与えられた元素種と site 位置から判別した元素種とが一致するか
+        check 用の method
+        """
+        path = os.path.join(self.PATH, "i-s/bcci/CrC")
+        judges = CEMParser.compare_pos_vs_clus(
+            os.path.join(path, 'log.txt'), BcciOctaSite)
+        for judge in judges:
+            assert judge
+
+    def test_bcci(self):
+        path = os.path.join(self.PATH, "i-s/bcci/CrC")
+        clus = CEMParser.parse_logtxt_bcci(os.path.join(path, 'log.txt'))
+        # print(clus[2])
+        # CEMParser.symm_cubic_bcci(clus[0], BcciOctaSite)
+        clusters = []
+        for c in clus:
+            clusters.append(CEMParser.symm_cubic_bcci(c, BcciOctaSite))
+        ecis = CEMParser.parse_ecitxt(os.path.join(path, 'eci.txt'))
+        out = {}
+        for label in ['C', 'A1', 'A2', 'A3']:
+            tmp_clus = []
+            tmp_ecis = []
+            for i in sorted(ecis.keys()):
+                if clusters[i][label]:
+                    tmp_clus.append(
+                        np.array([[BcciOctaSite.conv_site2idex(site)
+                                   for site in cluster]
+                                  for cluster in clusters[i][label]]))
+                    tmp_ecis.append(ecis[i])
+            out.update({label:[tmp_clus, tmp_ecis]})
+        # print(out['C'])
+
+        print(SubLattXtal(1, out, BcciOctaSite, arrange='A3C').get_energy() - 9614.98293)
+        print(SubLattXtal(1, out, BcciOctaSite, arrange='A2C').get_energy() - 9614.98293)
+        print(SubLattXtal(1, out, BcciOctaSite, arrange='A1C').get_energy() - 9614.98293)
+        print(SubLattXtal(1, out, BcciOctaSite, arrange='BCC_u').get_energy() - 9614.98293)
+        print(SubLattXtal(1, out, BcciOctaSite, arrange='A3D').get_energy() - 9614.98293)
+        print(SubLattXtal(1, out, BcciOctaSite, arrange='A2D').get_energy() - 9614.98293)
+
+        print(SubLattXtal(1, out, BcciOctaSite, arrange='A1D').get_energy() - 9614.98293)
+
+        print(SubLattXtal(1, out, BcciOctaSite, arrange='BCC_d').get_energy() - 9614.98293)
+
+        print(SubLattXtal(4, out, BcciOctaSite, arrange='ACD').get_energy() - 9614.98293)
+
+        CrC = SubLattXtal(8, out, BcciOctaSite, arrange='BCC_u')
+        CrC.cell[0,0,0,5] = 1
+        CrC.cell[0,0,0,0] = 0
+        crc1 = CrC.get_energy()
+        CrC.cell[0,0,0,5] = 0
+        CrC.cell[4,4,4,2] = 1
+        crc2 = CrC.get_energy()
+        print((crc1 - crc2)*8**4)
+
+
+
+
+
+    def _test_order_Ti(self):
+        """
+        Fe-Ti-C の test
+        """
+        nacl = NaClXtal.from_pickle_ecis(
+            os.path.join(self.PATH, "i-s/fcci/TiC/cluster.pickle"),
+            arrange='FCC_u', size=2)
+        print('FCC Fe 63.0657')
+        print(nacl.get_energy() + 54.8679061)
+        print()
+
+        nacl = NaClXtal.from_pickle_ecis(
+            os.path.join(self.PATH, "i-s/fcci/TiC/cluster.pickle"),
+            arrange='NaCl_uu', size=2)
+        print('NaCl FeC 532.114')
+        print(nacl.get_energy() + 54.8679061)
+        print()
+
+        nacl = NaClXtal.from_pickle_ecis(
+            os.path.join(self.PATH, "i-s/fcci/TiC/cluster.pickle"),
+            arrange='NaCl_du', size=2)
+        print('NaCl TiC -839.445')
+        print(nacl.get_energy() + 54.8679061)
+        print()
+
+        nacl = NaClXtal.from_pickle_ecis(
+            os.path.join(self.PATH, "i-s/fcci/TiC/cluster.pickle"),
+            arrange='FCC_d', size=2)
+        print('FCC Ti 54.8679')
+        print(nacl.get_energy() + 54.8679061)
+        print()
+
+    def _test_order_AlCu_TO(self):
+        """
+        規則相のエネルギーを icvm と比較
+        null clucter は含まれていないので注意
+        """
+        path = os.path.join(self.PATH, "AlCu/wien/TO")
+        fcc = FCCXtal.from_pickle_ecis(os.path.join(path, 'cluster.pickle'),
+                                       arrange='L12_A', size=10)
+        print("L12_A3B: -40.7461")
+        print(fcc.get_energy())
+
+        fcc = FCCXtal.from_pickle_ecis(os.path.join(path, 'cluster.pickle'),
+                                       arrange='L10', size=10)
+        print("L10_AB -148.668")
+        print(fcc.get_energy())
+
+        fcc = FCCXtal.from_pickle_ecis(os.path.join(path, 'cluster.pickle'),
+                                       arrange='L12_B', size=10)
+        print("L12_AB3 -183.749")
+        print(fcc.get_energy())
+
+    def _test_CEM_Parser(self):
+        """
+        CEM Parser をテストする
+        """
+        path = os.path.join(self.PATH, "AlCu/wien/TO")
+        CEMParser.from_dirc_std(path, QuadSite)
+        path = os.path.join(self.PATH, "AlCu/tetra_2R2N")
+        CEMParser.from_dirc_prim_fcc(path, QuadSite)
+        path = os.path.join(self.PATH, "i-s/fcci/TiC")
+        CEMParser.from_dirc_2sub(path, NaClSite)
+        # path = os.path.join(self.PATH, "i-s/bcci/CrC")
+        # CEMParser.from_dirc_2sub(path, NaClSite)
+
     def _test_get_entropy_TO(self):
         """
         de を記録して entropy を算出する
@@ -38,7 +166,7 @@ class Test(unittest.TestCase):  #pylint: disable=R0903
         mc.loop_fcc_micro_single(2000)
 
 
-    def test_flip_de(self):
+    def _test_flip_de(self):
         """
         flip de を total energy の変化量と比較
         一致すれば O.K.
@@ -180,27 +308,6 @@ class Test(unittest.TestCase):  #pylint: disable=R0903
         print(pred_de)
         print((de - pred_de) ** 2 < 1e-6)
 
-    def test_order_AlCu_TO(self):
-        """
-        規則相のエネルギーを icvm と比較
-        null clucter は含まれていないので注意
-        """
-        path = os.path.join(self.PATH, "AlCu/wien/TO")
-        fcc = FCCXtal.from_pickle_ecis(os.path.join(path, 'cluster.pickle'),
-                                       arrange='L12_A', size=10)
-        print("L12_A3B: -40.7461")
-        print(fcc.get_energy())
-
-        fcc = FCCXtal.from_pickle_ecis(os.path.join(path, 'cluster.pickle'),
-                                       arrange='L10', size=10)
-        print("L10_AB -148.668")
-        print(fcc.get_energy())
-
-        fcc = FCCXtal.from_pickle_ecis(os.path.join(path, 'cluster.pickle'),
-                                       arrange='L12_B', size=10)
-        print("L12_AB3 -183.749")
-        print(fcc.get_energy())
-
     def _test4(self):
         nacl = NaClXtal.from_pickle_ecis(
             os.path.join(self.PATH, "cluster_int_Ti.pickle"),
@@ -261,35 +368,6 @@ class Test(unittest.TestCase):  #pylint: disable=R0903
         solo_CrC = nacl.get_energy()
         de = pair_CrC - solo_CrC
         print(de * 10**3 * 4)
-        print()
-
-    def _test_order_Ti(self):
-        nacl = NaClXtal.from_pickle_ecis(
-            os.path.join(self.PATH, "cluster_int_Ti.pickle"),
-            arrange='FCC_u', size=2)
-        print('FCC Fe 63.0657')
-        print(nacl.get_energy() + 54.8679061)
-        print()
-
-        nacl = NaClXtal.from_pickle_ecis(
-            os.path.join(self.PATH, "cluster_int_Ti.pickle"),
-            arrange='NaCl_uu', size=2)
-        print('NaCl FeC 532.114')
-        print(nacl.get_energy() + 54.8679061)
-        print()
-
-        nacl = NaClXtal.from_pickle_ecis(
-            os.path.join(self.PATH, "cluster_int_Ti.pickle"),
-            arrange='NaCl_du', size=2)
-        print('NaCl TiC -839.445')
-        print(nacl.get_energy() + 54.8679061)
-        print()
-
-        nacl = NaClXtal.from_pickle_ecis(
-            os.path.join(self.PATH, "cluster_int_Ti.pickle"),
-            arrange='FCC_d', size=2)
-        print('FCC Ti 54.8679')
-        print(nacl.get_energy() + 54.8679061)
         print()
 
     def _test_clus_ene(self):
