@@ -93,7 +93,7 @@ def get_result_with_mag(path):
 
     for i in range(len(data.data[0]['symbol_mag/site'])):
         ax.plot(data['volume'], mag[:, i],
-                   label=data.data[0]['symbol_mag/site'][i])
+                label=data.data[0]['symbol_mag/site'][i])
     ax.legend(loc='upper left', prop={'size':8})
 
     osz_path = os.path.join(path, 'voldep/volume_*/OSZICAR')
@@ -116,12 +116,14 @@ def get_result_with_mag(path):
     with open(os.path.join(path, 'is_fit_ok'), 'w') as wfile:
         wfile.write(judge)
 
-    lines = ""
+    dirc = os.path.basename(os.path.abspath('.'))
+
+    lines = dirc + "\n"
     lines += "E:{0[2][0]} dE:{0[3][0]}\n".format(fit_res)
     lines += "B:{0[2][1]} dB:{0[3][1]}\n".format(fit_res)
     lines += "B':{0[2][2]} dB':{0[3][2]}\n".format(fit_res)
     lines += "V:{0[2][3]} dV:{0[3][3]}".format(fit_res)
-    fig.text(0.15, 0.8, lines)
+    fig.text(0.15, 0.785, lines)
     fname = os.path.join(path, 'murnaghan_plot.eps')
     fig.savefig(fname)
     pylab.close('all')
@@ -163,9 +165,14 @@ def judge_fit(fit_res, data):
         print('error is too large')
         judge = "too-large-error\n"
 
-    if fit_res[3][2] > 3.00:
+    if fit_res[3][2] > 2:
         print('error is too large')
         judge = "too-large-error\n"
+
+    if fit_res[3][1] > 0.05:
+        print('error is too large')
+        judge = "too-large-error\n"
+
 
     # if fit_res[3][3] > 0.02:
     #     print('error is too large')

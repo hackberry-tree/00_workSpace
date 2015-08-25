@@ -98,6 +98,7 @@ class LinkedList(object):
             return data
         return None
 
+
 class DataBox(object):
     """
     labeled list data
@@ -154,7 +155,7 @@ class DataBox(object):
     def separate_data(self, key):
         """
         self.dataをself.data[key]が同じ値を持つデータ毎に分割
-        DataBox形式のデータをもつlistをreturn
+        DataBox 型の object data をもつ list を return
         """
         values = sorted(set(self[key]))
         separated_data = []

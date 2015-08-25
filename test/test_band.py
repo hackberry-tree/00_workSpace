@@ -90,8 +90,7 @@ class Procar(unittest.TestCase): #pylint: disable=R0904
 
     def test_band_soc02(self):
         path = os.path.join(self.path, 'FeCo_new')
-        path = os.path.join(self.path, 'Fe16N2/elem_Fe12Co4N2_prim')
-        path = os.path.join(self.path, 'Fe16N2/Fe16N2')
+        path = os.path.join(self.path, 'elem_Fe12Co4N2_prim')
         dos = collect_vasp.Doscar(os.path.join(path, 'dos'))
         dos.get_data()
         ef = dos.fermi_energy
@@ -126,7 +125,7 @@ class Procar(unittest.TestCase): #pylint: disable=R0904
         ax1.scatter(band_001['kpoint_id'], band_001['energy'], s=mark_size,
                     c='b', linewidths=0)
 
-        band_100 = collect_vasp.ProcarNonC(os.path.join(path, 'band_nc'))
+        band_100 = collect_vasp.ProcarNonC(os.path.join(path, 'band100'))
         band_100.set_spin_direction()
         band_100.data = band_100.trim_data(band_100['spin'], 'down')
         band_100['energy'] = band_100['energy'] - ef

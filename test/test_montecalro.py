@@ -40,7 +40,7 @@ class Test(unittest.TestCase):  #pylint: disable=R0903
         for judge in judges:
             assert judge
 
-    def test_bcci(self):
+    def _test_bcci(self):
         path = os.path.join(self.PATH, "i-s/bcci/CrC")
         clus = CEMParser.parse_logtxt_bcci(os.path.join(path, 'log.txt'))
         # print(clus[2])
@@ -76,18 +76,59 @@ class Test(unittest.TestCase):  #pylint: disable=R0903
 
         print(SubLattXtal(4, out, BcciOctaSite, arrange='ACD').get_energy() - 9614.98293)
 
-        CrC = SubLattXtal(8, out, BcciOctaSite, arrange='BCC_u')
-        CrC.cell[0,0,0,5] = 1
+        CrC = SubLattXtal(4, out, BcciOctaSite, arrange='BCC_u')
+        CrC.cell[0,0,0,2] = 1
         CrC.cell[0,0,0,0] = 0
         crc1 = CrC.get_energy()
-        CrC.cell[0,0,0,5] = 0
-        CrC.cell[4,4,4,2] = 1
+        CrC.cell[0,0,0,2] = 0
+        CrC.cell[2,2,2,2] = 1
         crc2 = CrC.get_energy()
-        print((crc1 - crc2)*8**4)
+        print((crc1 - crc2)*4**3*8)
 
+    def _test_bcci2(self):
+        path = os.path.join(self.PATH, "i-s/bcci/CrC_spin_r")
+        clus = CEMParser.parse_logtxt_bcci(os.path.join(path, 'log.txt'))
+        # print(clus[2])
+        # CEMParser.symm_cubic_bcci(clus[0], BcciOctaSite)
+        clusters = []
+        for c in clus:
+            clusters.append(CEMParser.symm_cubic_bcci(c, BcciOctaSite))
+        ecis = CEMParser.parse_ecitxt(os.path.join(path, 'eci.txt'))
+        out = {}
+        for label in ['C', 'A1', 'A2', 'A3']:
+            tmp_clus = []
+            tmp_ecis = []
+            for i in sorted(ecis.keys()):
+                if clusters[i][label]:
+                    tmp_clus.append(
+                        np.array([[BcciOctaSite.conv_site2idex(site)
+                                   for site in cluster]
+                                  for cluster in clusters[i][label]]))
+                    tmp_ecis.append(ecis[i])
+            out.update({label:[tmp_clus, tmp_ecis]})
+        # print(out['C'])
 
+        print(SubLattXtal(1, out, BcciOctaSite, arrange='A3C').get_energy() - 8292.331923)
+        print(SubLattXtal(1, out, BcciOctaSite, arrange='A2C').get_energy() - 8292.33192)
+        print(SubLattXtal(1, out, BcciOctaSite, arrange='A1C').get_energy() - 8292.33192)
+        print(SubLattXtal(1, out, BcciOctaSite, arrange='BCC_u').get_energy() - 8292.33192)
+        print(SubLattXtal(1, out, BcciOctaSite, arrange='A3D').get_energy() - 8292.33192)
+        print(SubLattXtal(1, out, BcciOctaSite, arrange='A2D').get_energy() - 8292.33192)
 
+        print(SubLattXtal(1, out, BcciOctaSite, arrange='A1D').get_energy() - 8292.33192)
 
+        print(SubLattXtal(1, out, BcciOctaSite, arrange='BCC_d').get_energy() - 8292.33192)
+
+        print(SubLattXtal(4, out, BcciOctaSite, arrange='ACD').get_energy() - 8292.33192)
+
+        CrC = SubLattXtal(4, out, BcciOctaSite, arrange='BCC_d')
+        CrC.cell[0,0,0,2] = 1
+        CrC.cell[0,0,0,0] = 1
+        crc1 = CrC.get_energy()
+        CrC.cell[0,0,0,2] = 0
+        CrC.cell[2,2,2,2] = 1
+        crc2 = CrC.get_energy()
+        print((crc1 - crc2)*4**3*8)
 
     def _test_order_Ti(self):
         """
@@ -96,30 +137,62 @@ class Test(unittest.TestCase):  #pylint: disable=R0903
         nacl = NaClXtal.from_pickle_ecis(
             os.path.join(self.PATH, "i-s/fcci/TiC/cluster.pickle"),
             arrange='FCC_u', size=2)
-        print('FCC Fe 63.0657')
+        print('FCC Fe: 63.0657')
         print(nacl.get_energy() + 54.8679061)
         print()
 
         nacl = NaClXtal.from_pickle_ecis(
             os.path.join(self.PATH, "i-s/fcci/TiC/cluster.pickle"),
             arrange='NaCl_uu', size=2)
-        print('NaCl FeC 532.114')
+        print('NaCl FeC: 532.114')
         print(nacl.get_energy() + 54.8679061)
         print()
 
         nacl = NaClXtal.from_pickle_ecis(
             os.path.join(self.PATH, "i-s/fcci/TiC/cluster.pickle"),
             arrange='NaCl_du', size=2)
-        print('NaCl TiC -839.445')
+        print('NaCl TiC: -839.445')
         print(nacl.get_energy() + 54.8679061)
         print()
 
         nacl = NaClXtal.from_pickle_ecis(
             os.path.join(self.PATH, "i-s/fcci/TiC/cluster.pickle"),
             arrange='FCC_d', size=2)
-        print('FCC Ti 54.8679')
+        print('FCC Ti: 54.8679')
         print(nacl.get_energy() + 54.8679061)
         print()
+
+    def _test_flip_de_i_s(self):
+        """
+        i-s 系での flip によるエネルギー差を check
+        """
+        pass
+
+    def _test_mc_micro_nacl(self):
+        """
+        i-s 系での mc 計算のてすと
+        """
+        nacl = NaClXtal.from_pickle_ecis(
+            os.path.join(self.PATH, "i-s/fcci/TiC/cluster.pickle"),
+            arrange='random', conc=(0.001, 0.999), size=15)
+        # print((-nacl.get_flip_de_int()/80))
+
+        mc = MonteCarlo(nacl, T=1000)
+        # mc.loop_flip_nacl_fix_conc(100)
+        e = mc.loop_nacl_micro(10)
+        lines = ""
+        for i in range(len(e[0])):
+            lines += str(i) + "\t" + str(e[0][i][2]) + "\t"
+            for val in e[1][i][0]:
+                lines += str(val) + "\t"
+            for val in e[1][i][1]:
+                lines += str(val) + "\t"
+            lines += "\n"
+        print(lines)
+
+
+        # nacl.make_poscar(os.path.join(self.PATH, 'POSCAR'))
+
 
     def _test_order_AlCu_TO(self):
         """
@@ -142,7 +215,7 @@ class Test(unittest.TestCase):  #pylint: disable=R0903
         print("L12_AB3 -183.749")
         print(fcc.get_energy())
 
-    def _test_CEM_Parser(self):
+    def test_CEM_Parser(self):
         """
         CEM Parser をテストする
         """
@@ -164,7 +237,6 @@ class Test(unittest.TestCase):  #pylint: disable=R0903
                                        arrange='random', conc=0.25, size=30)
         mc = MonteCarlo(fcc, T=10000)
         mc.loop_fcc_micro_single(2000)
-
 
     def _test_flip_de(self):
         """
@@ -307,25 +379,6 @@ class Test(unittest.TestCase):  #pylint: disable=R0903
         print("Predict de")
         print(pred_de)
         print((de - pred_de) ** 2 < 1e-6)
-
-    def _test4(self):
-        nacl = NaClXtal.from_pickle_ecis(
-            os.path.join(self.PATH, "cluster_int_Ti.pickle"),
-            arrange='random', conc_int=0.001, conc_sub=0.999, size=15)
-        # print((-nacl.get_flip_de_int()/80))
-
-        mc = MonteCarlo(nacl, T=1000)
-
-        # int -569.921196 sub -240.030646
-        # nacl.sub_ecis[0] = -600.
-        # nacl.int_ecis[0] = -500
-        #mc.loop_flip_nacl(20)
-
-        #mc.loop_pairflip_nacl(100)
-
-        mc.loop_flip_nacl_fix_conc(100)
-
-        nacl.make_poscar(os.path.join(self.PATH, 'POSCAR'))
 
     def _test_order_Cr(self):
         nacl = NaClXtal.from_pickle_ecis(

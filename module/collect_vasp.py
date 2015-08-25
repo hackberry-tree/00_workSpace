@@ -47,9 +47,14 @@ class Mg_fit_results(DataBox):
         """
         with open(path, 'r') as rfile:
             lines = rfile.readlines()
-        energy = lines[0].split()[1]
-        volume = lines[3].split()[1]
-        return {'energy': energy, 'volume': volume}
+        energy = float(lines[0].split()[1])
+        B = float(lines[1].split()[1])
+        dB = float(lines[1].split()[3])
+        B1 = float(lines[2].split()[1])
+        dB1 = float(lines[2].split()[3])
+        volume = float(lines[3].split()[1])
+        return {'energy0': energy, 'energy': energy, 'B': B, 'B1': B1,
+                'volume0': volume, 'volume': volume, 'dB': dB, 'dB1': dB1}
 
     @staticmethod
     def parse_poscar(path='POSCAR'):
@@ -61,6 +66,19 @@ class Mg_fit_results(DataBox):
         elements = lines[5].split()
         num_atoms = [int(x) for x in lines[6].split()]
         return {'elements': elements, 'num_atoms': num_atoms}
+
+    def alt_energy_at_fixed_volume(self, new_volume):
+        """
+        fitting 結果に基づいて 一定体積の energy に変更
+        'C' 原子は数えず、ユニットセルを一定とする
+        """
+        for data in self.data:
+            alt_volume = new_volume * (1 - data['comp_dict_f']['C'])
+            new_energy = FitData.Murnaghan_func(
+                [data['energy0'], data['B'], data['B1'], data['volume0']],
+                alt_volume)
+            data['energy'] = new_energy
+            data['volume'] = alt_volume
 
     def set_comp_dict_f(self):
         """
@@ -96,9 +114,6 @@ class Mg_fit_results(DataBox):
             lines_out += " 1 " + str(data['energy']) + " 1\n"
         with open("energies.txt", 'w') as wfile:
             wfile.write(lines_out)
-
-
-
 
     def __str__(self):
         """
@@ -649,7 +664,6 @@ class Energy(DataBox):
         spg_num = finder.get_spacegroup_number()
         return spg, spg_num
 
-
     @staticmethod
     def get_enemag(oszicar='OSZICAR'):
         """
@@ -791,18 +805,17 @@ class Energy(DataBox):
 
     def separate_data(self, label, pos):
         """
-        self.dataのself.data[label]が同一の要素毎に分割する
-        分割の判定要素がlist[pos]のケース
-        plot用
+        self.data の self.data[label] が同一の要素毎に分割する
+        分割の判定要素が list[pos] のケース
+        plot 用
         """
-        tmp_keys = [x[pos] for x in self[label]]
-        keys = sorted(set(tmp_keys), key=tmp_keys.index)
-        output = []
-        for key in keys:
-            data = [x for x in self.data if key == x[label][pos]]
-            table = DataBox(data)
-            output.append(table)
-        return output
+        tmp_values = [x[pos] for x in self[label]]
+        values = sorted(set(tmp_values), key=tmp_values.index)
+        separated_data = []
+        for val in values:
+            data = [x for x in self.data if x[label][pos] == val]
+            separated_data.append(DataBox(data))
+        return separated_data
 
     def table_combi(self, sites, out_key):
         """

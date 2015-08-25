@@ -46,6 +46,9 @@ def main():
     parser.add_argument('--mg_fit', dest='run', const=print_data_mg,
                         action='store_const', default=print_data)
 
+    parser.add_argument('--volume', dest='volume', type=float, nargs=1,
+                        action='store', default=None)
+
 
 
     args = parser.parse_args()
@@ -59,16 +62,20 @@ def main():
         opt.update({'posc': args.posc[0]})
     if args.osz:
         opt.update({'osz': args.osz[0]})
+    if args.volume:
+        opt.update({'volume': args.volume[0]})
     # print(opt)
     args.run(**opt)
 
-def print_data_mg(path, mae=False):
+def print_data_mg(path, mae=False, volume=False):
     """
     MurnaghanFit の結果を収集する
     """
     dir_list = [os.path.dirname(x) for x in glob.glob(path)]
     data = collect_vasp.Mg_fit_results.from_dir_list(dir_list)
     data.set_comp_dict_f()
+    if volume:
+        data.alt_energy_at_fixed_volume(volume)
     print(data)
     data.make_energies_txt()
 
@@ -84,7 +91,7 @@ def correct_combi(path, pos, mae=False):
     data = collect_vasp.Energy(dir_list, 'POSCAR', 'OSZICAR')
     data.set_enthalpy()
     data.alt_elements_from_dir()
-    data.alt_cova_posstsd()
+    data.alt_cova_posstd()
     data.set_elements_z()  # 原子番号をset
 
     if mae:

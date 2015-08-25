@@ -331,7 +331,7 @@ class MonteCarlo(object):
         print(self.cell.get_energy())
         print("start")
         energy = [[0, 0, self.cell.get_energy()]]
-
+        xis = [[self.cell.get_xi_sub(), self.cell.get_xi_int()]]
         for _ in range(steps):
             de = self.cell.get_flip_de_sub().reshape(4, -1).T.reshape(
                 self.cell.size, self.cell.size, self.cell.size, 4)
@@ -371,13 +371,79 @@ class MonteCarlo(object):
             jmat = major * False
             jmat[tuple(np.array(np.where(major))[:, pair])] = judge
             jmat[tuple(np.array(np.where(minor)))] = judge
-            self.cell.cell[...,4:8][jmat] = 1 - self.cell.cell[..., 4:8][jmat]
+            self.cell.cell[..., 4:8][jmat] = 1 - self.cell.cell[..., 4:8][jmat]
 
             b = judge.sum()
             energy.append([a, b, self.cell.get_energy()])
-            print(self.cell.get_energy())
-        return energy
+            xis.append([self.cell.get_xi_sub(), self.cell.get_xi_int()])
+            # print(self.cell.get_energy())
+            # print(len(self.cell.get_xi_sub()))
+            # print(len(self.cell.get_xi_int()))
 
+        return energy, xis
+
+    def loop_nacl_micro_fix_sub(self, steps):
+        """
+        NaCl 型 cell の spin flip loop
+        micro canonical ensemble
+        s-site は固定
+        """
+        print("initial concentration")
+        print(self.cell.get_conc())
+        print("initial energy")
+        print(self.cell.get_energy())
+        print("start")
+        energy = [[0, 0, self.cell.get_energy()]]
+        xis = [[self.cell.get_xi_sub(), self.cell.get_xi_int()]]
+        for _ in range(steps):
+            # de = self.cell.get_flip_de_sub().reshape(4, -1).T.reshape(
+            #     self.cell.size, self.cell.size, self.cell.size, 4)
+            # m2p = self.cell.cell[..., 0:4] == 0
+            # p2m = self.cell.cell[..., 0:4] == 1
+            # is_m2p_major = m2p.sum() > p2m.sum()
+            # major = {True: m2p, False: p2m}[is_m2p_major]
+            # minor = {True: p2m, False: m2p}[is_m2p_major]
+            # pair = np.random.choice(
+            #     range(major.sum()), minor.sum(), replace=False)
+            # delta = de[tuple(np.array(np.where(major))[:, pair])] + \
+            #     de[tuple(np.array(np.where(minor)))]
+            # p = self.trans_prob(delta)
+            # rand = np.random.rand(p.size)
+            # judge = (rand < p)
+            # jmat = major * False
+            # jmat[tuple(np.array(np.where(major))[:, pair])] = judge
+            # jmat[tuple(np.array(np.where(minor)))] = judge
+            # self.cell.cell[..., 0:4][jmat] = 1 - self.cell.cell[..., 0:4][jmat]
+
+            a = 0
+
+            de = self.cell.get_flip_de_int().reshape(4, -1).T.reshape(
+                self.cell.size, self.cell.size, self.cell.size, 4)
+            m2p = self.cell.cell[..., 4:8] == 0
+            p2m = self.cell.cell[..., 4:8] == 1
+            is_m2p_major = m2p.sum() > p2m.sum()
+            major = {True: m2p, False: p2m}[is_m2p_major]
+            minor = {True: p2m, False: m2p}[is_m2p_major]
+            pair = np.random.choice(
+                range(major.sum()), minor.sum(), replace=False)
+            delta = de[tuple(np.array(np.where(major))[:, pair])] + \
+                de[tuple(np.array(np.where(minor)))]
+            p = self.trans_prob(delta)
+            rand = np.random.rand(p.size)
+            judge = (rand < p)
+            jmat = major * False
+            jmat[tuple(np.array(np.where(major))[:, pair])] = judge
+            jmat[tuple(np.array(np.where(minor)))] = judge
+            self.cell.cell[..., 4:8][jmat] = 1 - self.cell.cell[..., 4:8][jmat]
+
+            b = judge.sum()
+            energy.append([a, b, self.cell.get_energy()])
+            xis.append([self.cell.get_xi_sub(), self.cell.get_xi_int()])
+            # print(self.cell.get_energy())
+            # print(len(self.cell.get_xi_sub()))
+            # print(len(self.cell.get_xi_int()))
+
+        return energy, xis
 
 class BcciOctaSite(object):
     """
@@ -499,6 +565,7 @@ class BcciOctaSite(object):
         i, j = cls.SPIN
         spins = [j, i, i, j, j, i, j, j]
         return cls(spins)
+
 
 class NaClSite(object):
     """
@@ -717,19 +784,23 @@ class NaClXtal(object):
         """
         置換型サイトの相関関数を出力
         """
+        xis = []
         for idxs in self.sub_idxs:
             spins = self.cell[idxs].T
             xi = spins.prod(axis=-1).mean(axis=-1)
-            print(xi.mean())
+            xis.append(xi.mean())
+        return xis
 
     def get_xi_int(self):
         """
         侵入型サイトの相関関数を出力
         """
+        xis = []
         for idxs in self.int_idxs:
             spins = self.cell[idxs].T
             xi = spins.prod(axis=-1).mean(axis=-1)
-            print(xi.mean())
+            xis.append(xi.mean())
+        return xis
 
     def get_energy(self):
         """
@@ -835,6 +906,35 @@ class NaClXtal(object):
         """
         poss1 = self.conv2real_coordinates(
             np.argwhere(self.cell[..., 0:4] == 0), 's') / self.size
+        poss2 = self.conv2real_coordinates(
+            np.argwhere(self.cell[..., 4:8] == 1), 'i') / self.size
+        num1 = poss1.shape[0]
+        num2 = poss2.shape[0]
+        lines = "mc\n"
+        lines += "{0}\n".format(self.size*2.5)
+        lines += "1.00 0 0\n0 1.00 0\n0 0 1.00\n"
+        lines += "Cr C\n"
+        lines += "{0} {1}\n".format(num1, num2)
+        lines += "Direct\n"
+        for site in poss1:
+            lines += " ".join([str(x) for x in site]) + "\n"
+        for site in poss2:
+            lines += " ".join([str(x) for x in site]) + "\n"
+        with open(fname, 'w') as wfile:
+            wfile.write(lines)
+
+    def make_poscar11(self, fname):
+        """
+        self.cellをPOSCARのformatで出力する
+        attributes
+            fname: 出力のファイル名
+        other variables
+            poss1, poss2: 元素A, Bの座標
+            num1, num2: 元素A, Bのtotalの元素数
+            lines: 出力
+        """
+        poss1 = self.conv2real_coordinates(
+            np.argwhere(self.cell[..., 0:4] == 1), 's') / self.size
         poss2 = self.conv2real_coordinates(
             np.argwhere(self.cell[..., 4:8] == 1), 'i') / self.size
         num1 = poss1.shape[0]
@@ -1215,7 +1315,7 @@ class FCCXtal(object):
         delta は 0 -> 1 の場合 1
                  1 -> 0 の場合 -1 をとる係数
         """
-        delta = -2 * self.cell + 1
+        delta = - 2 * self.cell + 1
         return delta * self._get_site_de()
 
     def get_exchange_de(self, site_s0, site_s1):
