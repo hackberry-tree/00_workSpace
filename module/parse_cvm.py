@@ -1,10 +1,224 @@
 #!/opt/anaconda/bin/python
 # -*- coding: utf-8 -*-
 """
-cvm imput file を修正したりする
+cvm 関連の perser
 """
 import re
+import numpy as np
+import pylab
 from fractions import Fraction
+from commopy import DataBox
+from fitting_analysis import FitData
+
+class CVMLogEnth(object):
+    """
+    log.txt で CEM による規則相のエネルギーを parse する
+    """
+    def __init__(self, data):
+        self.stable = data['stable']
+        self.meta = data['meta']
+        self.unstable = data['unstable']
+        self.end0 = data['end0']
+        self.end1 = data['end1']
+
+
+    @classmethod
+    def from_file(cls, fname):
+        """
+        file から object を生成
+        """
+        with open(fname, 'r') as rfile:
+            lines = rfile.readlines()
+        meta = re.compile(r".*Ground States at dE/dX=.*")
+        i = -1
+        while not meta.match(lines[i]):
+            i -= 1
+        # head_stable
+        hs = i + 4
+        # head_meta_stable
+        j = 0
+        meta = re.compile(r".*Metastable and Degenerate Phases.*")
+        while not meta.match(lines[i+j]):
+            j += 1
+        hms = i + j + 1
+        # head_unstable
+        meta = re.compile(r".*Unstable Phases.*")
+        while not meta.match(lines[i+j]):
+            j += 1
+        hus = i + j + 1
+        # end
+        meta = re.compile(r".*predictive error for each structure.*")
+        while not meta.match(lines[i+j]):
+            j += 1
+        end = i + j - 2
+
+        label = ['x=eq', 'enth', 'dist', 'c_a']
+        out = {'end0': None, 'end1': None}
+        data = []
+        for line in lines[hs:hms-2]:
+            tmp = {'phase': line.split()[0]}
+            tmp.update({x: float(y) for x, y in zip(label, line.split()[1:])})
+            data.append([tmp])
+            if float(line.split()[-1]) == 1:
+                out.update({'end1': float(line.split()[2])})
+            if float(line.split()[-1]) == 0:
+                out.update({'end0': float(line.split()[2])})
+        out.update({'stable': DataBox(data)})
+
+        data = []
+        for line in lines[hms:hus-2]:
+            tmp = {'phase': line.split()[0]}
+            tmp.update({x: float(y) for x, y in zip(label, line.split()[1:])})
+            data.append([tmp])
+            if float(line.split()[-1]) == 1:
+                out.update({'end1': float(line.split()[2])})
+            if float(line.split()[-1]) == 0:
+                out.update({'end0': float(line.split()[2])})
+        out.update({'meta': DataBox(data)})
+
+        data = []
+        for line in lines[hus:end]:
+            tmp = {'phase': line.split()[0]}
+            tmp.update({x: float(y) for x, y in zip(label, line.split()[1:])})
+            data.append([tmp])
+            if float(line.split()[-1]) == 1:
+                out.update({'end1': float(line.split()[2])})
+            if float(line.split()[-1]) == 0:
+                out.update({'end0': float(line.split()[2])})
+        out.update({'unstable': DataBox(data)})
+
+        return cls(out)
+
+
+class CVMCv1Parser(object):
+    def __init__(self, data):
+        self.data = data
+
+    @classmethod
+    def from_file(cls, fname):
+        with open(fname, 'r') as rfile:
+            lines = rfile.readlines()
+        meta = re.compile(r"^f .*")
+        data = []
+        for i in range(len(lines)):
+            if meta.match(lines[i]):
+                tmp = {'tmp': float(lines[i].split()[2]),
+                       'F': float(lines[i].split()[5])}
+                i += 1
+                tmp.update({'comp1': float(lines[i].split()[1])})
+                data.append(tmp)
+        tmps = list(set([x['tmp'] for x in data]))
+        tmps.sort()
+        data_dict = {key: [] for key in tmps}
+        for d in data:
+            data_dict[d['tmp']].append(d)
+        out = []
+        for key in data_dict:
+            data_dict[key].sort(key=lambda x: x['comp1'])
+            out.append({'temp': key, 'data': CVMPlt(data_dict[key])})
+        return cls(out)
+
+
+class CVMPlt(DataBox):
+    """
+    cv1.txt を cvmplt.sh で抽出した結果を parse する
+    """
+    def __init__(self, data):
+        DataBox.__init__(self, data)
+        self.output_keys = []
+
+    @classmethod
+    def from_file(cls, fname):
+        """
+        file から object を作成
+        """
+        with open(fname, 'r') as rfile:
+            lines = rfile.readlines()
+        label_list = [x for x in lines[0].split()[1:]]
+        data = []
+        for line in lines[1:]:
+            try:
+                data.append({x:float(y) for x, y in zip(label_list, line.split())})
+            except ValueError:
+                pass
+        return cls(data)
+
+    def set_free_energy_00(self, e0, e1):
+        """
+        両端を 0 に取った自由エネルギーを CVMPlt object 形式で return
+        comp1, g00 以外のデータは破棄して両端のデータを追加
+        e0, e1 の単位は meV
+        """
+        self['g00'] = (self['F'] * 1.380662 * 6.02 -
+                       e0 * 96.485344520851 * (1 - self['comp1']) -
+                       e1 * 96.485344520851 * (self['comp1'])) / 1000
+        reserve = self.output_keys
+        self.output_keys = ['comp1', 'g00']
+        data_list = self.to_list()
+        self.output_keys = reserve
+        self.data.insert(0, {'comp1': 0, 'g00': 0})
+        self.data.append({'comp1': 1, 'g00': 0})
+
+    def set_free_energy_00_from_logtxt(self, fname):
+        """
+        log.txt を指定して両端を 0 に補正
+        """
+        enth = CVMLogEnth.from_file(fname)
+        self.set_free_energy_00(enth.end0, enth.end1)
+
+    def set_end_energy(self, e0, e1):
+        """
+        端のエネルギーを e0, e1 に補正する
+        単位は kJ/mol
+        一度 get_free_energy_00 して得たデータを取り扱うこと
+        """
+        endcomp = self['comp1'][-1]
+        self['collected_g'] = (self['g00'] +
+                               e0 * (1 - self['comp1']/endcomp) +
+                               e1 * self['comp1']/endcomp)
+
+    def set_vac_correction(self, latt_type):
+        """
+        vac を考慮して単位 mol のエネルギーに変換
+        comp1 と g00 を補正
+        補正方法は evernote 参照
+        """
+        var = {'binary_fcci_octa': [1, 1], 'binary_bcci_tet': [1, 6],
+               'binary_bcci_nine': [1, 9]}[latt_type]
+
+        self['g00'] *= var[1] / (1 + var[1] * self['comp1'])
+        tmp = var[1] * self['comp1'] / (var[0] + var[1] * self['comp1'])
+        self['comp1'] = tmp
+
+    def get_t0(self, another_data, range=(0, 1)):
+        """
+        range 内の交点を探す
+        なければ None を return
+        """
+        yp = None
+        xi = pylab.linspace(range[0], range[-1], 10000)
+        y1 = pylab.stineman_interp(xi, self['comp1'], self['collected_g'], yp)
+        y2 = pylab.stineman_interp(
+            xi, another_data['comp1'], another_data['collected_g'], yp)
+        delta = y1 - y2
+        # 最初に符号が反転する点を T0 とする
+        return xi[np.where((delta[0] * delta) < 0)][0], y1[np.where((delta[0] * delta) < 0)][0]
+
+
+
+    @staticmethod
+    def fit_quad(data_x, data_y):
+        """
+        4 次方程式で fit
+        """
+        def func(coefs, x):
+            return (coefs[0] + coefs[1]*x + coefs[2]*(x**2) +
+                    coefs[3]*(x**3) + coefs[4]*(x**4))
+        opt_coefs, err = FitData.fit_arbfunc(data_x, data_y, func, [1, 1, 1, 1, 1])
+        fitx = np.linspace(0, 1, 100)
+        fity = func(opt_coefs, fitx)
+        return opt_coefs, err, fitx, fity
+
 
 
 class CVMEnergies(object):

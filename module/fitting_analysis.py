@@ -13,6 +13,21 @@ class FitData(object):
     fitting用のobject
     fitting_analysis.pyに移行
     """
+    @classmethod
+    def fit_arbfunc(cls, x, y, func, coefs):
+        """
+        任意の関数で fit
+        memo として
+        func の形式は func(coefs, x)
+        1: 誤差の関数作成
+        2: 最小二乗法
+        """
+        def err(coefs, x, y):
+            return y - func(coefs, x)
+        fit, fit_err = cls.leastsq(err, coefs, args=(x, y))
+        return fit, fit_err
+
+
     @staticmethod
     def Stineman_interp_fit(x, y): #pylint: disable=C0103
         """
@@ -82,7 +97,8 @@ class FitData(object):
     @staticmethod
     def leastsq(func, x0, args):
         """
-        scipyを使った最小二乗法　誤差もreturnする
+        scipyを使った最小二乗法
+        誤差もreturnする
         誤差(func)を最小化する
         """
         xfit, xcov, infodict, errmsg, success = \

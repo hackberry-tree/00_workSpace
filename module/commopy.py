@@ -152,6 +152,16 @@ class DataBox(object):
         return [self.data[i] for i in range(0, len(self.data))
                 if distinct[i] == value]
 
+    def search_value(self, key, eq_val):
+        """
+        self[key] == eq_val に最初に該当した dict を return する
+        """
+        index = np.where(self[key] == eq_val)
+        print(index)
+        return self.data[index[0]]
+
+
+
     def separate_data(self, key):
         """
         self.dataをself.data[key]が同じ値を持つデータ毎に分割
