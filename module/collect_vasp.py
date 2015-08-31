@@ -899,8 +899,11 @@ class Energy(DataBox):
             path = os.path.join(data['path'], 'OUTCAR')
             with open(path, 'r') as rfile:
                 lines = rfile.readlines()
-            p = lines.index(" magnetization (x)\n")
-            mag = [float(lines[i].split()[4]) for i in range(p+4, p+4+total)]
+            try:
+                p = lines.index(" magnetization (x)\n")
+                mag = [float(lines[i].split()[4]) for i in range(p+4, p+4+total)]
+            except ValueError:
+                mag = [0 for _ in range(len(symbols))]
             data['symbol_mag/site'] = symbols
             data['mag/site'] = mag
 
