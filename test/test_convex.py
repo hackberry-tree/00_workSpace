@@ -11,6 +11,7 @@ import convex_hull
 from convex_hull import FindGS
 from commopy import Bash
 from mpl_toolkits.mplot3d import Axes3D
+from parse_cvm import CVMLogEnth
 
 from pymatgen.matproj.rest import MPRester
 from pymatgen.phasediagram.pdmaker import PhaseDiagram
@@ -48,7 +49,7 @@ class TestConvex(unittest.TestCase):
         # tris = [triangleB, triangleC]
         # print(FindGS.find_adjacent_triangles(triangleA, tris))
 
-    def test_select_base(self):
+    def _test_select_base(self):
         """
         桁数を揃えておかないと無限ループに陥る
         """
@@ -58,8 +59,7 @@ class TestConvex(unittest.TestCase):
         #not_end = [[0.3333333333, 0.3333333333, -11.6165778644]]
         bases = FindGS.collect_base_triangles(end_memb, not_end)
 
-
-    def test_icvm(self):
+    def _test_icvm(self):
         """
         icvm の test
         """
@@ -88,7 +88,46 @@ class TestConvex(unittest.TestCase):
         # pylab.plot(data_xy[:, 0], data_xy[:, 1], 'd')
         # pylab.show()
 
+    def test_icvm_log(self):
+        """
+        icvm log
+        """
+        path = os.path.join(TEST_PATH, 'montecarlo/i-s/fcci/Ti1C1/str_energy.txt')
+        log = CVMLogEnth.from_file_ternary(path)
+        log.stable.data += log.meta.data
 
+        print(log.stable['c_a'] )
+        conc_A = log.stable['c_a']
+        print(conc_A)
+
+        conc_C = log.stable['c_c']  / (0.5 + log.stable['c_a'])
+        print(conc_C)
+
+        data_xyz = np.c_[conc_A, conc_C,
+                         log.stable['enth']]
+
+        fig = pylab.figure()
+        ax = Axes3D(fig)
+        pt3d = convex_hull.PlotTriangularCoord(ax)
+        pt3d.plt_dot(data_xyz)
+
+        path = os.path.join(TEST_PATH, 'montecarlo/i-s/fcci/Ti0C1/str_energy.txt')
+        log = CVMLogEnth.from_file_ternary(path)
+        log.stable.data += log.meta.data
+
+        print(log.stable['c_a'] )
+        conc_A = log.stable['c_a']
+        print(conc_A)
+
+        conc_C = (0.5 - log.stable['c_c'])  / (0.5 + log.stable['c_a'])
+        print(conc_C)
+
+        data_xyz = np.c_[conc_A, conc_C,
+                         log.stable['enth']]
+
+        pt3d.plt_dot(data_xyz, color='r')
+
+        pylab.show()
 
     def _test_draw_convex_hull(self):
         data = pylab.loadtxt(self.path, comments='#')
@@ -135,6 +174,20 @@ class TestConvex(unittest.TestCase):
         #pint(not_base)
         pylab.show()
 
+    def _test_from_pm_volume(self):
+        """
+        MPのデータ volume をプリント
+        MD 計算の初期値用
+        """
+        ent_list = []
+        mpr = MPRester("WTxsDhRV7g2Mcbqw")
+        composition = ['Fe', 'P']
+        entries = mpr.get_entries_in_chemsys(composition)
+
+        for entry in entries:
+            if entry.as_dict()['data']['e_above_hull'] == 0:
+                print(entry.as_dict()['data']['pretty_formula'])
+                print(entry.as_dict()['data']['volume']/entry.as_dict()['data']['nsites'])
 
 def clean_prev(path, files):
     """

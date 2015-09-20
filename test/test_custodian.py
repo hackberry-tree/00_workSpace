@@ -13,8 +13,7 @@ def main():
     """main"""
     unittest.main()
 
-TEST_PATH = ('/Users/enoki/Documents/01_ResearchData/Calculations/'
-             '99_python/01_testRun/')
+TEST_PATH = "/Users/enoki/Researches/Analysis/Codes/01_testRun/"
 
 class ExampleJob(Job):
     """

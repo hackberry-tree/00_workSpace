@@ -1,6 +1,6 @@
 #!/home/enoki/.conda/envs/py3k/bin/python
 # -*- coding: utf-8 -*-
-from mc_int import *
+from montecarlo import *
 import sys
 
 

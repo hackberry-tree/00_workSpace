@@ -13,8 +13,7 @@ from mpl_toolkits.mplot3d import Axes3D
 
 
 
-TEST_PATH = ("/Users/enoki/Documents/01_ResearchData/Calculations/"
-             "99_python/01_testRun/")
+TEST_PATH = "/Users/enoki/Researches/Analysis/Codes/01_testRun/"
 
 def main():
     unittest.main()
@@ -23,7 +22,7 @@ def main():
 class testCorrectResults(unittest.TestCase):
     path = os.path.join(TEST_PATH, 'sprkkr', 'FeCo_MAE_map')
 
-    def test_get_data(self):
+    def _test_get_data(self):
         path_list = glob.glob(os.path.join(self.path, '*', '001', '*'))
         test = sprkkr.CorrectResults(path_list, '*.pot', 'OUTPUT.out')
         test.list_no_converged()
@@ -38,24 +37,27 @@ class testCorrectResults(unittest.TestCase):
         y = test["c/a"]
         z = test["mae"]
         ax.scatter3D(np.ravel(x), np.ravel(y), np.ravel(z))
-        pylab.show()
+        # pylab.show()
 
 
 
 class TestOUTPUT(unittest.TestCase):
     path = os.path.join(TEST_PATH, 'sprkkr', 'single_data')
 
-    def test_get_energy(self):
+    def _test_get_energy(self):
         test = sprkkr.Output(os.path.join(self.path, 'Output.out'))
         print(test.data)
 
 class TestPot(unittest.TestCase):
     path = glob.glob(os.path.join(TEST_PATH, 'sprkkr', 'single_data', '*.pot'))
 
-    def test_get_energy(self):
-        test = sprkkr.Pot(self.path[0])
-        print(test.data)
+    def _test_get_pot_pre(self):
+        test = sprkkr.Pot.from_file(self.path[0])
+        print(test.data_pre)
 
+    def test_get_pot(self):
+        test = sprkkr.Pot.from_file(self.path[0])
+        print(test.correct_rws())
 
 def clean_prev(path, files):
     """

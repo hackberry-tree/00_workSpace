@@ -73,7 +73,10 @@ class Mg_fit_results(DataBox):
         'C' 原子は数えず、ユニットセルを一定とする
         """
         for data in self.data:
-            alt_volume = new_volume * (1 - data['comp_dict_f']['C'])
+            try:
+                alt_volume = new_volume * (1 - data['comp_dict_f']['C'])
+            except KeyError:
+                alt_volume = new_volume
             new_energy = FitData.Murnaghan_func(
                 [data['energy0'], data['B'], data['B1'], data['volume0']],
                 alt_volume)

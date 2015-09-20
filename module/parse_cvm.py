@@ -21,6 +21,19 @@ class CVMLogEnth(object):
         self.end0 = data['end0']
         self.end1 = data['end1']
 
+    def print_all_phase_energy(self):
+        """
+        c_a, enth を print する
+        """
+        lines = ""
+        self.stable.output_keys = ['c_a', 'enth']
+        lines += str(self.stable)
+        self.meta.output_keys = ['c_a', 'enth']
+        lines += "\n".join(str(self.meta).split("\n")[1:])
+        self.unstable.output_keys = ['c_a', 'enth']
+        lines += "\n".join(str(self.unstable).split("\n")[1:])
+        print(lines)
+
 
     @classmethod
     def from_file(cls, fname):
@@ -58,7 +71,7 @@ class CVMLogEnth(object):
         for line in lines[hs:hms-2]:
             tmp = {'phase': line.split()[0]}
             tmp.update({x: float(y) for x, y in zip(label, line.split()[1:])})
-            data.append([tmp])
+            data.append(tmp)
             if float(line.split()[-1]) == 1:
                 out.update({'end1': float(line.split()[2])})
             if float(line.split()[-1]) == 0:
@@ -69,7 +82,7 @@ class CVMLogEnth(object):
         for line in lines[hms:hus-2]:
             tmp = {'phase': line.split()[0]}
             tmp.update({x: float(y) for x, y in zip(label, line.split()[1:])})
-            data.append([tmp])
+            data.append(tmp)
             if float(line.split()[-1]) == 1:
                 out.update({'end1': float(line.split()[2])})
             if float(line.split()[-1]) == 0:
@@ -80,7 +93,74 @@ class CVMLogEnth(object):
         for line in lines[hus:end]:
             tmp = {'phase': line.split()[0]}
             tmp.update({x: float(y) for x, y in zip(label, line.split()[1:])})
-            data.append([tmp])
+            data.append(tmp)
+            if float(line.split()[-1]) == 1:
+                out.update({'end1': float(line.split()[2])})
+            if float(line.split()[-1]) == 0:
+                out.update({'end0': float(line.split()[2])})
+        out.update({'unstable': DataBox(data)})
+
+        return cls(out)
+
+    @classmethod
+    def from_file_ternary(cls, fname):
+        """
+        file から object を生成
+        """
+        with open(fname, 'r') as rfile:
+            lines = rfile.readlines()
+        meta = re.compile(r".*Ground States at dE/dX=.*")
+        i = -1
+        while not meta.match(lines[i]):
+            i -= 1
+        # head_stable
+        hs = i + 4
+        # head_meta_stable
+        j = 0
+        meta = re.compile(r".*Metastable and Degenerate Phases.*")
+        while not meta.match(lines[i+j]):
+            j += 1
+        hms = i + j + 1
+        # head_unstable
+        meta = re.compile(r".*Unstable Phases.*")
+        while not meta.match(lines[i+j]):
+            j += 1
+        hus = i + j + 1
+        # end
+        meta = re.compile(r".*predictive error for each structure.*")
+        while not meta.match(lines[i+j]):
+            j += 1
+        end = i + j - 2
+
+        label = ['x=eq', 'enth', 'dist', 'c_a', 'c_c']
+        out = {'end0': None, 'end1': None}
+        data = []
+        for line in lines[hs:hms-2]:
+            tmp = {'phase': line.split()[0]}
+            tmp.update({x: float(y) for x, y in zip(label, line.split()[1:])})
+            data.append(tmp)
+            if float(line.split()[-1]) == 1:
+                out.update({'end1': float(line.split()[2])})
+            if float(line.split()[-1]) == 0:
+                out.update({'end0': float(line.split()[2])})
+        out.update({'stable': DataBox(data)})
+
+        data = []
+        for line in lines[hms:hus-2]:
+            tmp = {'phase': line.split()[0]}
+            tmp.update({x: float(y) for x, y in zip(label, line.split()[1:])})
+            data.append(tmp)
+            if float(line.split()[-1]) == 1:
+                out.update({'end1': float(line.split()[2])})
+            if float(line.split()[-1]) == 0:
+                out.update({'end0': float(line.split()[2])})
+        out.update({'meta': DataBox(data)})
+
+        data = []
+        for line in lines[hus:end]:
+            tmp = {'phase': line.split()[0]}
+            tmp.update({x: float(y) for x, y in zip(label, line.split()[1:])})
+            data.append(tmp)
             if float(line.split()[-1]) == 1:
                 out.update({'end1': float(line.split()[2])})
             if float(line.split()[-1]) == 0:
@@ -91,11 +171,17 @@ class CVMLogEnth(object):
 
 
 class CVMCv1Parser(object):
+    """
+    cv1.txt を parse する
+    """
     def __init__(self, data):
         self.data = data
 
     @classmethod
     def from_file(cls, fname):
+        """
+        cv1.txt から object を生成
+        """
         with open(fname, 'r') as rfile:
             lines = rfile.readlines()
         meta = re.compile(r"^f .*")
@@ -218,7 +304,6 @@ class CVMPlt(DataBox):
         fitx = np.linspace(0, 1, 100)
         fity = func(opt_coefs, fitx)
         return opt_coefs, err, fitx, fity
-
 
 
 class CVMEnergies(object):

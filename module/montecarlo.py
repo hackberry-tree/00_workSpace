@@ -141,6 +141,29 @@ class MonteCarlo(object):
             return site_s0, site_s1
         return select_pair_sites
 
+    def __select_pair_sites2(self, idr=(0,8)):
+        """
+        s = 0/1 の site の pair をランダムに選択する関数を生成する
+        """
+        num_s0 = range((self.cell.cell[:, :, :, idr[0]:idr[1]] == 0).sum())
+        num_s1 = range((self.cell.cell[:, :, :, idr[0]:idr[1]] == 1).sum())
+        def select_pair_sites():
+            """
+            num_s0, s1 を memo 化しておく
+            """
+            s0 = self.cell.cell[:, :, :, idr[0]:idr[1]] == 0
+            site_s0 = (
+                np.array(np.where(s0)))[:, np.random.choice(
+                    num_s0, 1, replace=False)[0]]
+            s1 = self.cell.cell[:, :, :, idr[0]:idr[1]] == 1
+            site_s1 = (
+                np.array(np.where(s1)))[:, np.random.choice(
+                    num_s1, 1, replace=False)[0]]
+            site_s0 += np.array([0, 0, 0, idr[0]])
+            site_s1 += np.array([0, 0, 0, idr[0]])
+            return site_s0, site_s1
+        return select_pair_sites
+
     def __loop_fcc_micro_single(self, steps, func):
         """
         fcc cell の spin flip loop
@@ -186,6 +209,79 @@ class MonteCarlo(object):
         # final = self.cell.get_energy()
         # print(final - initial)
 
+    def __loop_bcci_micro_single(self, steps, func):
+        return self.__loop_2sub_micro_single(steps, func, (0, 2))
+
+    def __loop_2sub_micro_single(self, steps, func, idr):
+        """
+        fcc cell の spin flip loop
+        micro canonical ensemble
+        1 点づつ判定する
+        エネルギー差を計算する func を指定する
+
+        # 01 s=0,1 のサイトをランダムに選択
+        # 02 spin を交換した時のエネルギーを計算 -> flip 判定
+        # 03 spin の交換処理
+
+        """
+        # print("initial concentration")
+        # print(self.cell.get_conc())
+        # print("initial energy")
+        # total_e = self.cell.get_energy()
+        # print(total_e)
+        # print("start")
+
+        # 01
+        select_pair_sites_s = self.__select_pair_sites2(idr=idr)
+        select_pair_sites_i = self.__select_pair_sites2(idr=idr)
+        # size = self.cell.size**3*4
+        delta_e = 0
+        size = self.cell.size ** 3 * 8
+        # initial = self.cell.get_energy()
+        for _ in range(steps):
+            # 01s
+            site_s0, site_s1 = select_pair_sites_s()
+            # 02s
+            de = func(site_s0, site_s1)
+            p = float(self.trans_prob(de))
+            # print(p)
+            rand = float(np.random.rand(1))
+            s = {False: [0, 1], True: [1, 0]}[rand < p]
+
+            # 03s
+            self.cell.cell[tuple(site_s0.T)] = s[0]
+            self.cell.cell[tuple(site_s1.T)] = s[1]
+            out_de = {False: 0, True: de}[rand < p]
+            delta_e += out_de
+
+            # 01
+            site_s0, site_s1 = select_pair_sites_i()
+            # 02
+            de = func(site_s0, site_s1)
+            p = float(self.trans_prob(de))
+            # print(p)
+            rand = float(np.random.rand(1))
+            s = {False: [0, 1], True: [1, 0]}[rand < p]
+
+            # 03
+            self.cell.cell[tuple(site_s0.T)] = s[0]
+            self.cell.cell[tuple(site_s1.T)] = s[1]
+            out_de = {False: 0, True: de}[rand < p]
+            delta_e += out_de
+
+        return delta_e / size
+        # print(delta_e/size)
+        # final = self.cell.get_energy()
+        # print(final - initial)
+
+    def loop_bcci_micro_single(self, steps):
+        """
+        """
+        return self.__loop_bcci_micro_single(steps, self.cell.get_exchange_de)
+
+    def loop_fcci_micro_single(self, steps):
+        return self.__loop_2sub_micro_single(steps, self.cell.get_exchange_de, (0, 4))
+
     def loop_fcc_micro_single(self, steps):
         """
         normal size の cell 用
@@ -194,7 +290,7 @@ class MonteCarlo(object):
 
     def loop_fcc_micro_single_small(self, steps):
         """
-        NaCl 型 cell の spin flip loop
+        fcc cell の spin flip loop
         micro canonical ensemble
         1 点づつ判定
         小さな cell 用の計算 (cell のサイズが相関関数のサイズより小さい場合)
@@ -445,6 +541,255 @@ class MonteCarlo(object):
 
         return energy, xis
 
+    def loop_nacl_micro_fix_int(self, steps):
+        """
+        NaCl 型 cell の spin flip loop
+        micro canonical ensemble
+        s-site は固定
+        """
+        print("initial concentration")
+        print(self.cell.get_conc())
+        print("initial energy")
+        print(self.cell.get_energy())
+        print("start")
+        energy = [[0, 0, self.cell.get_energy()]]
+        xis = [[self.cell.get_xi_sub(), self.cell.get_xi_int()]]
+        for _ in range(steps):
+            de = self.cell.get_flip_de_sub().reshape(4, -1).T.reshape(
+                self.cell.size, self.cell.size, self.cell.size, 4)
+            m2p = self.cell.cell[..., 0:4] == 0
+            p2m = self.cell.cell[..., 0:4] == 1
+            is_m2p_major = m2p.sum() > p2m.sum()
+            major = {True: m2p, False: p2m}[is_m2p_major]
+            minor = {True: p2m, False: m2p}[is_m2p_major]
+            pair = np.random.choice(
+                range(major.sum()), minor.sum(), replace=False)
+            delta = de[tuple(np.array(np.where(major))[:, pair])] + \
+                de[tuple(np.array(np.where(minor)))]
+            p = self.trans_prob(delta)
+            rand = np.random.rand(p.size)
+            judge = (rand < p)
+            jmat = major * False
+            jmat[tuple(np.array(np.where(major))[:, pair])] = judge
+            jmat[tuple(np.array(np.where(minor)))] = judge
+            self.cell.cell[..., 0:4][jmat] = 1 - self.cell.cell[..., 0:4][jmat]
+
+            a = judge.sum()
+
+            # de = self.cell.get_flip_de_int().reshape(4, -1).T.reshape(
+            #     self.cell.size, self.cell.size, self.cell.size, 4)
+            # m2p = self.cell.cell[..., 4:8] == 0
+            # p2m = self.cell.cell[..., 4:8] == 1
+            # is_m2p_major = m2p.sum() > p2m.sum()
+            # major = {True: m2p, False: p2m}[is_m2p_major]
+            # minor = {True: p2m, False: m2p}[is_m2p_major]
+            # pair = np.random.choice(
+            #     range(major.sum()), minor.sum(), replace=False)
+            # delta = de[tuple(np.array(np.where(major))[:, pair])] + \
+            #     de[tuple(np.array(np.where(minor)))]
+            # p = self.trans_prob(delta)
+            # rand = np.random.rand(p.size)
+            # judge = (rand < p)
+            # jmat = major * False
+            # jmat[tuple(np.array(np.where(major))[:, pair])] = judge
+            # jmat[tuple(np.array(np.where(minor)))] = judge
+            # self.cell.cell[..., 4:8][jmat] = 1 - self.cell.cell[..., 4:8][jmat]
+
+            b = 0
+            energy.append([a, b, self.cell.get_energy()])
+            xis.append([self.cell.get_xi_sub(), self.cell.get_xi_int()])
+            # print(self.cell.get_energy())
+            # print(len(self.cell.get_xi_sub()))
+            # print(len(self.cell.get_xi_int()))
+
+        return energy, xis
+
+    def loop_bcci_micro(self, steps):
+        """
+        NaCl 型 cell の spin flip loop
+        micro canonical ensemble
+        """
+        print("initial concentration")
+        print(self.cell.get_conc())
+        print("initial energy")
+        print(self.cell.get_energy())
+        print("start")
+        energy = [[0, 0, self.cell.get_energy()]]
+        # xis = [[self.cell.get_xi_sub(), self.cell.get_xi_int()]]
+        for _ in range(steps):
+            de = self.cell.get_flip_de()[:,:,:,:2].reshape(2, -1).T.reshape(
+                self.cell.size, self.cell.size, self.cell.size, 2)
+            m2p = self.cell.cell[..., 0:2] == 0
+            p2m = self.cell.cell[..., 0:2] == 1
+            is_m2p_major = m2p.sum() > p2m.sum()
+            major = {True: m2p, False: p2m}[is_m2p_major]
+            minor = {True: p2m, False: m2p}[is_m2p_major]
+            pair = np.random.choice(
+                range(major.sum()), minor.sum(), replace=False)
+            delta = de[tuple(np.array(np.where(major))[:, pair])] + \
+                de[tuple(np.array(np.where(minor)))]
+            p = self.trans_prob(delta)
+            rand = np.random.rand(p.size)
+            judge = (rand < p)
+            jmat = major * False
+            jmat[tuple(np.array(np.where(major))[:, pair])] = judge
+            jmat[tuple(np.array(np.where(minor)))] = judge
+            self.cell.cell[..., 0:2][jmat] = 1 - self.cell.cell[..., 0:2][jmat]
+
+            a = judge.sum()
+
+            de = self.cell.get_flip_de()[:,:,:,2:].reshape(6, -1).T.reshape(
+                self.cell.size, self.cell.size, self.cell.size, 6)
+            m2p = self.cell.cell[..., 2:8] == 0
+            p2m = self.cell.cell[..., 2:8] == 1
+            is_m2p_major = m2p.sum() > p2m.sum()
+            major = {True: m2p, False: p2m}[is_m2p_major]
+            minor = {True: p2m, False: m2p}[is_m2p_major]
+            pair = np.random.choice(
+                range(major.sum()), minor.sum(), replace=False)
+            delta = de[tuple(np.array(np.where(major))[:, pair])] + \
+                de[tuple(np.array(np.where(minor)))]
+            p = self.trans_prob(delta)
+            rand = np.random.rand(p.size)
+            judge = (rand < p)
+            jmat = major * False
+            jmat[tuple(np.array(np.where(major))[:, pair])] = judge
+            jmat[tuple(np.array(np.where(minor)))] = judge
+            self.cell.cell[..., 2:8][jmat] = 1 - self.cell.cell[..., 2:8][jmat]
+
+            b = judge.sum()
+            energy.append([a, b, self.cell.get_energy()])
+            # print(self.cell.get_energy())
+            # print(len(self.cell.get_xi_sub()))
+            # print(len(self.cell.get_xi_int()))
+        return energy
+
+    def loop_bcci_micro_fix_sub(self, steps):
+        """
+        NaCl 型 cell の spin flip loop
+        micro canonical ensemble
+        s-site は固定
+        """
+        print("initial concentration")
+        print(self.cell.get_conc())
+        print("initial energy")
+        print(self.cell.get_energy())
+        print("start")
+        energy = [[0, 0, self.cell.get_energy()]]
+        xis = [[self.cell.get_xi_sub(), self.cell.get_xi_int()]]
+        for _ in range(steps):
+            # de = self.cell.get_flip_de_sub().reshape(4, -1).T.reshape(
+            #     self.cell.size, self.cell.size, self.cell.size, 4)
+            # m2p = self.cell.cell[..., 0:4] == 0
+            # p2m = self.cell.cell[..., 0:4] == 1
+            # is_m2p_major = m2p.sum() > p2m.sum()
+            # major = {True: m2p, False: p2m}[is_m2p_major]
+            # minor = {True: p2m, False: m2p}[is_m2p_major]
+            # pair = np.random.choice(
+            #     range(major.sum()), minor.sum(), replace=False)
+            # delta = de[tuple(np.array(np.where(major))[:, pair])] + \
+            #     de[tuple(np.array(np.where(minor)))]
+            # p = self.trans_prob(delta)
+            # rand = np.random.rand(p.size)
+            # judge = (rand < p)
+            # jmat = major * False
+            # jmat[tuple(np.array(np.where(major))[:, pair])] = judge
+            # jmat[tuple(np.array(np.where(minor)))] = judge
+            # self.cell.cell[..., 0:4][jmat] = 1 - self.cell.cell[..., 0:4][jmat]
+
+            a = 0
+
+            de = self.cell.get_flip_de_int().reshape(4, -1).T.reshape(
+                self.cell.size, self.cell.size, self.cell.size, 4)
+            m2p = self.cell.cell[..., 2:8] == 0
+            p2m = self.cell.cell[..., 2:8] == 1
+            is_m2p_major = m2p.sum() > p2m.sum()
+            major = {True: m2p, False: p2m}[is_m2p_major]
+            minor = {True: p2m, False: m2p}[is_m2p_major]
+            pair = np.random.choice(
+                range(major.sum()), minor.sum(), replace=False)
+            delta = de[tuple(np.array(np.where(major))[:, pair])] + \
+                de[tuple(np.array(np.where(minor)))]
+            p = self.trans_prob(delta)
+            rand = np.random.rand(p.size)
+            judge = (rand < p)
+            jmat = major * False
+            jmat[tuple(np.array(np.where(major))[:, pair])] = judge
+            jmat[tuple(np.array(np.where(minor)))] = judge
+            self.cell.cell[..., 2:8][jmat] = 1 - self.cell.cell[..., 2:8][jmat]
+
+            b = judge.sum()
+            energy.append([a, b, self.cell.get_energy()])
+            xis.append([self.cell.get_xi_sub(), self.cell.get_xi_int()])
+            # print(self.cell.get_energy())
+            # print(len(self.cell.get_xi_sub()))
+            # print(len(self.cell.get_xi_int()))
+        return energy, xis
+
+    def loop_bcci_micro_fix_int(self, steps):
+        """
+        NaCl 型 cell の spin flip loop
+        micro canonical ensemble
+        s-site は固定
+        """
+        print("initial concentration")
+        print(self.cell.get_conc())
+        print("initial energy")
+        print(self.cell.get_energy())
+        print("start")
+        energy = [[0, 0, self.cell.get_energy()]]
+        xis = [[self.cell.get_xi_sub(), self.cell.get_xi_int()]]
+        for _ in range(steps):
+            de = self.cell.get_flip_de_sub().reshape(4, -1).T.reshape(
+                self.cell.size, self.cell.size, self.cell.size, 4)
+            m2p = self.cell.cell[..., 0:2] == 0
+            p2m = self.cell.cell[..., 0:2] == 1
+            is_m2p_major = m2p.sum() > p2m.sum()
+            major = {True: m2p, False: p2m}[is_m2p_major]
+            minor = {True: p2m, False: m2p}[is_m2p_major]
+            pair = np.random.choice(
+                range(major.sum()), minor.sum(), replace=False)
+            delta = de[tuple(np.array(np.where(major))[:, pair])] + \
+                de[tuple(np.array(np.where(minor)))]
+            p = self.trans_prob(delta)
+            rand = np.random.rand(p.size)
+            judge = (rand < p)
+            jmat = major * False
+            jmat[tuple(np.array(np.where(major))[:, pair])] = judge
+            jmat[tuple(np.array(np.where(minor)))] = judge
+            self.cell.cell[..., 0:2][jmat] = 1 - self.cell.cell[..., 0:2][jmat]
+
+            a = judge.sum()
+
+            # de = self.cell.get_flip_de_int().reshape(4, -1).T.reshape(
+            #     self.cell.size, self.cell.size, self.cell.size, 4)
+            # m2p = self.cell.cell[..., 4:8] == 0
+            # p2m = self.cell.cell[..., 4:8] == 1
+            # is_m2p_major = m2p.sum() > p2m.sum()
+            # major = {True: m2p, False: p2m}[is_m2p_major]
+            # minor = {True: p2m, False: m2p}[is_m2p_major]
+            # pair = np.random.choice(
+            #     range(major.sum()), minor.sum(), replace=False)
+            # delta = de[tuple(np.array(np.where(major))[:, pair])] + \
+            #     de[tuple(np.array(np.where(minor)))]
+            # p = self.trans_prob(delta)
+            # rand = np.random.rand(p.size)
+            # judge = (rand < p)
+            # jmat = major * False
+            # jmat[tuple(np.array(np.where(major))[:, pair])] = judge
+            # jmat[tuple(np.array(np.where(minor)))] = judge
+            # self.cell.cell[..., 4:8][jmat] = 1 - self.cell.cell[..., 4:8][jmat]
+
+            b = 0
+            energy.append([a, b, self.cell.get_energy()])
+            xis.append([self.cell.get_xi_sub(), self.cell.get_xi_int()])
+            # print(self.cell.get_energy())
+            # print(len(self.cell.get_xi_sub()))
+            # print(len(self.cell.get_xi_int()))
+
+        return energy, xis
+
+
 class BcciOctaSite(object):
     """
     Bcc + Octahedron-interstital 8 点のサイト情報を記録する
@@ -480,7 +825,7 @@ class BcciOctaSite(object):
         self.spins = spins
 
     @classmethod
-    def conv_site2idex(cls, site):
+    def conv_site2idx(cls, site):
         """
         座標の直接表記を class 内の index 表記に変換して return する
         """
@@ -491,17 +836,20 @@ class BcciOctaSite(object):
         return index
 
     @classmethod
-    def random(cls, _):
+    def random(cls, conc):
         """
         spin を site に random に配置する
         cls.CONC_INT と cls.CONC_SUB で i-, s-site の濃度を指定する
         """
+        if conc:
+            cls.CONC_INT = conc[0]
+            cls.CONC_SUB = conc[1]
         i = cls.CONC_INT
         s = cls.CONC_SUB
         spins = [cls.SPIN[int(round(random.uniform(0.5-s/2., 1-s/2.)))]
-                 for _ in range(4)] + \
+                 for _ in range(2)] + \
                 [cls.SPIN[int(round(random.uniform(0.5-i/2., 1-i/2.)))]
-                 for _ in range(4)]
+                 for _ in range(6)]
         return cls(spins)
 
     @classmethod
@@ -598,7 +946,7 @@ class NaClSite(object):
         self.spins = spins
 
     @classmethod
-    def conv_site2idex(cls, site):
+    def conv_site2idx(cls, site):
         """
         座標の直接表記を class 内の index 表記に変換して return する
         """
@@ -680,6 +1028,25 @@ class NaClSite(object):
         spins = [j, j, j, j, i, i, i, i]
         return cls(spins)
 
+    @classmethod
+    def order_00(cls, _):
+        """
+        NaCl型構造
+        i-site down-spin, s-site up-spin
+        """
+        i, j = cls.SPIN
+        spins = [j, j, j, i, j, j, i, j]
+        return cls(spins)
+
+    @classmethod
+    def order_01(cls, _):
+        """
+        NaCl型構造
+        i-site down-spin, s-site up-spin
+        """
+        i, j = cls.SPIN
+        spins = [i, i, i, j, j, j, i, j]
+        return cls(spins)
 
     def __str__(self):
         return str(self.spins)
@@ -688,7 +1055,27 @@ class NaClSite(object):
         return self.spins[index]
 
 
-class NaClXtal(object):
+class CellIOMixin(object):
+    """
+    cell の読み書き用の mixin
+    """
+    def save_cell(self, title):
+        """
+        cellをpickleデータに保存する
+        """
+        fname = title + ".pickle"
+        with open(fname, 'wb') as wbfile:
+            pickle.dump(self.cell, wbfile)
+
+    def load_cell(self, fname):
+        """
+        size は揃えておく必要がある
+        """
+        with open(fname, 'rb') as rbfile:
+            self.cell = pickle.load(rbfile)
+
+
+class NaClXtal(CellIOMixin):
     """
     NaCl 型の結晶格子を作成する
     各サイトは index 表記になっているため、座標の参照の仕方が面倒
@@ -720,7 +1107,9 @@ class NaClXtal(object):
         NaClSite.CONC_INT = conc[1]
         mode = {'random': NaClSite.random, 'L10': NaClSite.L10,
                 'FCC_u': NaClSite.FCC_u, 'NaCl_uu': NaClSite.NaCl_uu,
-                'FCC_d': NaClSite.FCC_d, 'NaCl_du': NaClSite.NaCl_du,}[arrange]
+                'FCC_d': NaClSite.FCC_d, 'NaCl_du': NaClSite.NaCl_du,
+                'order_00': NaClSite.order_00, 'order_01': NaClSite.order_01,
+                }[arrange]
         self.cell = np.array([[[mode(conc).spins for z in range(size)]
                                for y in range(size)] for x in range(size)])
 
@@ -744,14 +1133,6 @@ class NaClXtal(object):
             self.int_idxs = self.get_clus_idxs_int(self.int_clusters)
             self.sub_idxs = self.get_clus_idxs_sub(self.sub_clusters)
 
-    def save_cell(self, title):
-        """
-        cellをpickleデータに保存する
-        """
-        fname = title + ".pickle"
-        with open(fname, 'wb') as wbfile:
-            pickle.dump(self, wbfile)
-
     @staticmethod
     def get_trans():
         """
@@ -760,7 +1141,7 @@ class NaClXtal(object):
         sites = np.array(NaClSite.SITES)
         size = sites.shape[0]
         tmp = sites.reshape(size, 1, 3) + sites.reshape(1, size, 3)
-        index = np.array([[NaClSite.conv_site2idex(x) for x in y] for y in tmp])
+        index = np.array([[NaClSite.conv_site2idx(x) for x in y] for y in tmp])
         obj = np.c_[
             np.zeros_like(np.arange(size*3).reshape(size, 3)), np.arange(size)]
         return index - obj
@@ -771,10 +1152,10 @@ class NaClXtal(object):
         """
         ecis や cluster の情報が入った pickle data から cls を生成
         load する pickle data の format
-        dict{sub_clusters: [n * cluster * symm * 4 座標]
-             sub_ecis: [n * ecis]
-             int_clusters: ...
-             int_ecis: ...}
+            dict{sub_clusters: [n * cluster * symm * 4 座標]
+                 sub_ecis: [n * ecis]
+                 int_clusters: ...
+                 int_ecis: ...}
         """
         with open(fname, 'rb') as rbfile:
             ecis_data = pickle.load(rbfile)
@@ -823,6 +1204,7 @@ class NaClXtal(object):
         """
         de = 0
         for idxs, eci in zip(self.sub_idxs, self.sub_ecis):
+            # print(len(idxs))
             spins = self.cell[idxs].T
             xi = spins.prod(axis=-1).mean(axis=-1)
             spins_inv = spins
@@ -894,63 +1276,65 @@ class NaClXtal(object):
         return {'subs': self.cell[..., 0:4].mean(),
                 'inter': self.cell[..., 4:8].mean()}
 
-    def make_poscar(self, fname):
+    def make_poscar(self, fname, s_spin, i_spin, with_s_oposit=False):
         """
         self.cellをPOSCARのformatで出力する
         attributes
             fname: 出力のファイル名
+            s_spin: 書き出す substitutional site の spin の値
+            i_spin: 書き出す interstitial site の spin の値
         other variables
             poss1, poss2: 元素A, Bの座標
             num1, num2: 元素A, Bのtotalの元素数
             lines: 出力
         """
         poss1 = self.conv2real_coordinates(
-            np.argwhere(self.cell[..., 0:4] == 0), 's') / self.size
+            np.argwhere(self.cell[..., 0:4] == s_spin), 's') / self.size
         poss2 = self.conv2real_coordinates(
-            np.argwhere(self.cell[..., 4:8] == 1), 'i') / self.size
+            np.argwhere(self.cell[..., 4:8] == i_spin), 'i') / self.size
         num1 = poss1.shape[0]
         num2 = poss2.shape[0]
+        poss_o = None
+        num_o = 0
+        if with_s_oposit:
+            poss_o = self.conv2real_coordinates(
+                np.argwhere(self.cell[..., 0:4] == 1 - s_spin), 's') / self.size
+            num_o = poss_o.shape[0]
         lines = "mc\n"
         lines += "{0}\n".format(self.size*2.5)
         lines += "1.00 0 0\n0 1.00 0\n0 0 1.00\n"
-        lines += "Cr C\n"
-        lines += "{0} {1}\n".format(num1, num2)
+        lines += "Cr C Fe\n"
+        lines += "{0} {1} {2}\n".format(num1, num2, num_o)
         lines += "Direct\n"
         for site in poss1:
             lines += " ".join([str(x) for x in site]) + "\n"
         for site in poss2:
             lines += " ".join([str(x) for x in site]) + "\n"
+        if with_s_oposit:
+            for site in poss_o:
+                lines += " ".join([str(x) for x in site]) + "\n"
         with open(fname, 'w') as wfile:
             wfile.write(lines)
 
-    def make_poscar11(self, fname):
+    def load_poscar(self, fname, s_spin, i_spin):
         """
-        self.cellをPOSCARのformatで出力する
-        attributes
-            fname: 出力のファイル名
-        other variables
-            poss1, poss2: 元素A, Bの座標
-            num1, num2: 元素A, Bのtotalの元素数
-            lines: 出力
+        書き出した poscar を読み込む
+        size は object の self.size と合致していなければならない
         """
-        poss1 = self.conv2real_coordinates(
-            np.argwhere(self.cell[..., 0:4] == 1), 's') / self.size
-        poss2 = self.conv2real_coordinates(
-            np.argwhere(self.cell[..., 4:8] == 1), 'i') / self.size
-        num1 = poss1.shape[0]
-        num2 = poss2.shape[0]
-        lines = "mc\n"
-        lines += "{0}\n".format(self.size*2.5)
-        lines += "1.00 0 0\n0 1.00 0\n0 0 1.00\n"
-        lines += "Cr C\n"
-        lines += "{0} {1}\n".format(num1, num2)
-        lines += "Direct\n"
-        for site in poss1:
-            lines += " ".join([str(x) for x in site]) + "\n"
-        for site in poss2:
-            lines += " ".join([str(x) for x in site]) + "\n"
-        with open(fname, 'w') as wfile:
-            wfile.write(lines)
+        with open(fname, 'r') as rfile:
+            lines = rfile.readlines()
+        if self.size != int(float(lines[1]) / 2.5):
+            print("size is different !")
+            return
+        num_s, num_i, _ = (int(x) for x in lines[6].split())
+        for s in range(num_s):
+            site = [float(x) * self.size for x in lines[s+8].split()]
+            site_idx = np.array(self.conv_NaCl(site))
+            self.cell[tuple(site_idx.T)] = s_spin
+        for i in range(num_i):
+            site = [float(x) * self.size for x in lines[i+8+num_s].split()]
+            site_idx = np.array(self.conv_NaCl(site))
+            self.cell[tuple(site_idx.T)] = i_spin
 
     @staticmethod
     def conv2real_coordinates(coords, s_or_i):
@@ -961,6 +1345,35 @@ class NaClXtal(object):
         trans = np.array(NaClSite.SITES)
         real_coords = coords[:, 0:3] + trans[coords[:, 3] + n]
         return real_coords
+
+    @staticmethod
+    def conv_NaCl(site):
+        """
+        NaCl site の表記に変換する
+        dcimal to integer
+        """
+        integ = []
+        decim = []
+        for coord in site:
+            tmp = math.floor(round(coord*2, 1) / 2)
+            integ.append(tmp)
+            decim.append(round((coord - tmp), 2))
+        site_id = {(0.0, 0.0, 0.0): 0, (0.0, 0.5, 0.5): 1,
+                   (0.5, 0.0, 0.5): 2, (0.5, 0.5, 0.0): 3,
+                   (0.5, 0.0, 0.0): 4, (0.0, 0.5, 0.0): 5,
+                   (0.0, 0.0, 0.5): 6, (0.5, 0.5, 0.5): 7}[tuple(decim)]
+        integ.append(site_id)
+        return integ
+
+    def get_exchange_de(self, site_s0, site_s1):
+        size = self.size ** 4 * 8
+        e0 = self.get_energy()
+        self.cell[tuple(site_s0.T)] = 1
+        self.cell[tuple(site_s1.T)] = 0
+        e1 = self.get_energy()
+        self.cell[tuple(site_s0.T)] = 0
+        self.cell[tuple(site_s1.T)] = 1
+        return (e1 - e0) * size
 
 
 class SubLattXtal(object):
@@ -1041,6 +1454,16 @@ class SubLattXtal(object):
         self.ecis[4] = self.nodup_int_ecis
         self.ecis[7] = self.nodup_int_ecis
 
+    def get_exchange_de(self, site_s0, site_s1):
+        size = self.size ** 4 * 8
+        e0 = self.get_energy()
+        self.cell[tuple(site_s0.T)] = 1
+        self.cell[tuple(site_s1.T)] = 0
+        e1 = self.get_energy()
+        self.cell[tuple(site_s0.T)] = 0
+        self.cell[tuple(site_s1.T)] = 1
+        return (e1 - e0) * size
+
     def get_trans(self):
         """
         相対座標へ変換するための matrix を return する
@@ -1048,7 +1471,7 @@ class SubLattXtal(object):
         sites = np.array(self.site_class.SITES)
         size = sites.shape[0]
         tmp = sites.reshape(size, 1, 3) + sites.reshape(1, size, 3)
-        index = np.array([[self.site_class.conv_site2idex(x)
+        index = np.array([[self.site_class.conv_site2idx(x)
                            for x in y] for y in tmp])
         obj = np.c_[
             np.zeros_like(np.arange(size*3).reshape(size, 3)), np.arange(size)]
@@ -1103,6 +1526,82 @@ class SubLattXtal(object):
         return (energy*self.cell)[:, :, :, 0:2].mean() + \
             (energy*self.cell)[:, :, :, 2:8].mean()
 
+    def get_flip_de(self):
+        """
+        置換型サイトの spin flip によるエネルギー差をサイト毎に return
+        """
+        de = 0
+        for idxs, eci in zip(self.idxs, self.ecis):
+            print(len(idxs))
+            print("pass")
+            spins = self.cell[idxs].T
+            xi = spins.prod(axis=-1).mean(axis=-1)
+            spins_inv = spins
+            spins_inv[..., 0] = 1 - spins[..., 0]
+            xi_inv = spins_inv.prod(axis=-1).mean(axis=-1)
+            dxi = xi_inv - xi
+            de = dxi * eci + de
+        return de
+
+    def get_conc(self):
+        """
+        組成比を return
+        return:
+            {'inter': , 'subs': }
+        """
+        return {'subs': self.cell[..., 0:2].mean(),
+                'inter': self.cell[..., 2:8].mean()}
+
+    @staticmethod
+    def conv2real_coordinates(coords, s_or_i):
+        """
+        実空間の座標に変換
+        """
+        n = {'s': 0, 'i': 2}[s_or_i]
+        trans = np.array(BcciOctaSite.SITES)
+        real_coords = coords[:, 0:3] + trans[coords[:, 3] + n]
+        return real_coords
+
+    def make_poscar(self, fname, s_spin, i_spin, with_s_oposit=False):
+        """
+        self.cellをPOSCARのformatで出力する
+        attributes
+            fname: 出力のファイル名
+            s_spin: 書き出す substitutional site の spin の値
+            i_spin: 書き出す interstitial site の spin の値
+        other variables
+            poss1, poss2: 元素A, Bの座標
+            num1, num2: 元素A, Bのtotalの元素数
+            lines: 出力
+        """
+        poss1 = self.conv2real_coordinates(
+            np.argwhere(self.cell[..., 0:2] == s_spin), 's') / self.size
+        poss2 = self.conv2real_coordinates(
+            np.argwhere(self.cell[..., 2:8] == i_spin), 'i') / self.size
+        num1 = poss1.shape[0]
+        num2 = poss2.shape[0]
+        poss_o = None
+        num_o = 0
+        if with_s_oposit:
+            poss_o = self.conv2real_coordinates(
+                np.argwhere(self.cell[..., 0:4] == 1 - s_spin), 's') / self.size
+            num_o = poss_o.shape[0]
+        lines = "mc\n"
+        lines += "{0}\n".format(self.size*2.5)
+        lines += "1.00 0 0\n0 1.00 0\n0 0 1.00\n"
+        lines += "Cr C Fe\n"
+        lines += "{0} {1} {2}\n".format(num1, num2, num_o)
+        lines += "Direct\n"
+        for site in poss1:
+            lines += " ".join([str(x) for x in site]) + "\n"
+        for site in poss2:
+            lines += " ".join([str(x) for x in site]) + "\n"
+        if with_s_oposit:
+            for site in poss_o:
+                lines += " ".join([str(x) for x in site]) + "\n"
+        with open(fname, 'w') as wfile:
+            wfile.write(lines)
+
 
 class QuadSite(object):
     """
@@ -1116,11 +1615,12 @@ class QuadSite(object):
     _site_s2 = [1/2, 0.0, 1/2]
     _site_s3 = [1/2, 1/2, 0.0]
     SITES = [_site_s0, _site_s1, _site_s2, _site_s3]
+
     def __init__(self, spins):
         self.spins = spins
 
     @classmethod
-    def conv_site2idex(cls, site):
+    def conv_site2idx(cls, site):
         """
         座標の直接表記を class 内の index 表記に変換する
         """
@@ -1183,22 +1683,23 @@ class QuadSite(object):
 
 class FCCXtal(object):
     """
-    np.array object of 3dim×4sites
-    size: cellの大きさ (size**3)
-    arrange: 'random', 'L12', 'L10'を指定
-    conc: A, B 二元系におけるAの濃度の初期値 (random以外では不使用)
+    np.array object  3 dim × 4 sites
+    size: cellの大きさ (total の原子数 size**3 × 4 sites)
+    arrange: 'random', 'L12', 'L10' などを指定
+    conc: A, B 二元系における A の濃度の初期値 (random以外では不使用)
     other variables
         TRANS: 相対座標
-               原点を別の座標にとった際、他の座標を参照する際に使用
-               [新しい原点の座標, 参照する座標]として記述している
-               例: site3からsite2を参照する場合
+               原点を別の site にとって、
+               他の site を参照する相対座標を計算する際に使用
+               [新しい原点の site, 参照する相対座標 & site]として記述している
+               例: site = 3 から site = 2 を参照する場合 site = 2 に対し
                    + [1, 0, 0, -1]した座標がそのサイトになる
         COORDS: 全ての格子点の座標 (site_id は 0 のみ)
 
-    相関関数の計算方法は利便性のために原点[0, 0, 0, 0]には
+    相関関数の計算方法は利便性のために原点 [0, 0, 0, 0] には
     必ず spin = 1 を置いて計算する (xi_o とする)
-    各サイトの xi_o を予め計算しておいて、
-    実際のサイト上の xi_o は サイト上の spin * xi_o で計算する
+    各サイトの xi_o を予め計算しておくことで、
+    実際のサイト上の xi_o は サイト上の spin * xi_o で計算できる
     spin flip のエネルギー算出の際に計算を簡略化できる
 
     xi_o 算出のために point cluster は initialize の時点で分離
@@ -1269,7 +1770,7 @@ class FCCXtal(object):
         sites = np.array(QuadSite.SITES)
         size = sites.shape[0]
         tmp = sites.reshape(size, 1, 3) + sites.reshape(1, size, 3)
-        index = np.array([[QuadSite.conv_site2idex(x) for x in y] for y in tmp])
+        index = np.array([[QuadSite.conv_site2idx(x) for x in y] for y in tmp])
         obj = np.c_[
             np.zeros_like(np.arange(size*3).reshape(size, 3)), np.arange(size)]
         return index - obj
@@ -1436,7 +1937,7 @@ class FCCXtal(object):
         with open(fname, 'wb') as wbfile:
             pickle.dump(self.cell, wbfile)
 
-    def from_pickle_cell(self, fname):
+    def load_cell(self, fname):
         """
         size は揃えておく必要がある
         """
@@ -1450,24 +1951,26 @@ class FCCXtal(object):
 class CEMParser(object):
     """
     CEM の結果を読んで cluster, eci の情報を取り扱う
+
     Bcci に関しては対称操作が i-site 位置によって異なることが問題になる
     そこで clusters & ecis の組み合わせは各サイト毎の data として取り扱う
     したがって、 8 つの clusters, ecis のセットを作成する
     時間ができたら、他の class もこの方式に統一したい
     """
     @classmethod
-    def get_unique(cls, clus, site_class):
+    def get_unique_conv_site2idx(cls, clus, site_class):
         """
         対象操作を行って
-        重複を削除
-        サイトの表記を site_class に基づいた index 表記に変換
+        重複を削除 get_unique
+        さらに、サイトの表記を site_class に基づいた
+        index 表記に変換 (conv_site2idx)
         """
         unique_clus = []
         for i in range(len(clus[0])):
             sym_dups = cls._symm_cubic(clus[0][i], clus[1][i])
             sym_uni = cls._rm_dup(sym_dups)
             unique_clus.append(
-                np.array([[site_class.conv_site2idex(site) for site in cluster]
+                np.array([[site_class.conv_site2idx(site) for site in cluster]
                           for cluster in sym_uni]))
         return unique_clus
 
@@ -1531,7 +2034,7 @@ class CEMParser(object):
         symm_m = np.array([[1, 1, 1], [-1, 1, 1], [1, -1, 1], [1, 1, -1],
                            [-1, -1, 1], [-1, 1, -1], [1, -1, -1], [-1, -1, -1]])
         sites_rm = (sites_r * symm_m.reshape(8, 1, 1, 3)).reshape(48, nbody, 3)
-        equiv_label = [[site_class.EQUIV[site_class.conv_site2idex(site)[3]]
+        equiv_label = [[site_class.EQUIV[site_class.conv_site2idx(site)[3]]
                         for site in cluster] for cluster in sites_rm]
         clusters = {}
         for label in ['C', 'A1', 'A2', 'A3']:
@@ -1647,7 +2150,7 @@ class CEMParser(object):
         ecis = cls.parse_ecitxt(os.path.join(dirc, 'eci.txt'))
         clus = [clus[i] for i in sorted(ecis.keys())]
         ecis = [ecis[i] for i in sorted(ecis.keys())]
-        clus_out = [np.array([[site_class.conv_site2idex(site) for site in cl]
+        clus_out = [np.array([[site_class.conv_site2idx(site) for site in cl]
                               for cl in cluster]) for cluster in clus]
         # print(clus_out)
         with open(os.path.join(dirc, "cluster.pickle"), 'wb') as wbfile:
@@ -1666,7 +2169,7 @@ class CEMParser(object):
         ecis = cls.parse_ecitxt(os.path.join(dirc, 'eci.txt'))
         clus = [clus[i] for i in sorted(ecis.keys())]
         ecis = [ecis[i] for i in sorted(ecis.keys())]
-        clus_out = [np.array([[site_class.conv_site2idex(site) for site in cl]
+        clus_out = [np.array([[site_class.conv_site2idx(site) for site in cl]
                               for cl in cluster]) for cluster in clus]
         with open(os.path.join(dirc, "cluster.pickle"), 'wb') as wbfile:
             pickle.dump({'clusters': clus_out[1:], 'ecis': ecis[1:],
@@ -1681,8 +2184,8 @@ class CEMParser(object):
         clus, pos = cls.parse_logtxt_2sub(os.path.join(dirc, "log.txt"))
         ecis = cls.parse_ecitxt(os.path.join(dirc, 'eci.txt'))
         clus_dict = cls.extract_used_cluster(clus, pos, ecis)
-        a = cls.get_unique(clus_dict['a'], site_class)
-        c = cls.get_unique(clus_dict['c'], site_class)
+        a = cls.get_unique_conv_site2idx(clus_dict['a'], site_class)
+        c = cls.get_unique_conv_site2idx(clus_dict['c'], site_class)
         eci_a = clus_dict['a'][2]
         eci_c = clus_dict['c'][2]
         # print(a)
@@ -1743,6 +2246,12 @@ class CEMParser(object):
         """
         cluster の site を log.txt から読み込む
         i-s 用
+        return:
+            clus: 全ての cluster の site が入った array の list
+            in_c: clus 中でラベル C の元素を含む list の番号
+            pos_c: clus 中でラベル C の座標 (array) の番号
+            in_a: clus 中でラベル A の元素を含む list の番号
+            pos_a: clus 中でラベル A の座標 (array) の番号
         """
         with open(fname, 'r') as rfile:
             lines = rfile.readlines()
@@ -1768,6 +2277,7 @@ class CEMParser(object):
     def parse_logtxt_bcci(cls, fname):
         """
         bcci の site を log.txt から読み込む
+        ToDo: 使っていないかもしれない、調べて削除
         """
         with open(fname, 'r') as rfile:
             lines = rfile.readlines()
@@ -1794,7 +2304,7 @@ class CEMParser(object):
         log = [line.split()[6] for line in lines[midle+2: end-4]]
         clus = cls.parse_logtxt_bcci(fname)
         l = site_class.LABEL
-        conv = ["".join([l[site_class.conv_site2idex(site)[3]]
+        conv = ["".join([l[site_class.conv_site2idx(site)[3]]
                          for site in cluster])
                 for cluster in clus]
         judge = []
@@ -1920,3 +2430,5 @@ class CEMParser(object):
         ecis_dict = {i:x for i, x in zip(cls_ids, ecis)}
         ecis_dict.pop(-1)
         return ecis_dict
+
+

@@ -1,14 +1,14 @@
 #!/opt/anaconda/bin/python
 # -*- coding: utf-8 -*-
 """
-cvm imput file を修正したりする
+cvm input file を修正したりする
 
 e.g.
     C1, D1のラベルを入れ替える:
-        cvm_imput.py bcci.str --exchange C1 D1
+        cvm_input.py bcci.str --exchange C1 D1
 
     元素を追加:
-        cvm_imput.py bcci.str --add_site input
+        cvm_input.py bcci.str --add_site input
         >> input の中身
             primitive_z = 3
             origin = 0
