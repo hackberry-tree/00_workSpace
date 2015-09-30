@@ -7,7 +7,7 @@ import os
 import unittest
 from benchmarker import Benchmarker
 from montecarlo import MonteCarlo, NaClXtal, FCCXtal, CEMParser, SubLattXtal
-from montecarlo import QuadSite, NaClSite, BcciOctaSite
+from montecarlo import QuadSite, NaClSite, BcciOctaSite, CEMParser02
 import numpy as np
 
 __date__ = "Aug 4 2015"
@@ -28,7 +28,7 @@ class Test(unittest.TestCase):  #pylint: disable=R0903
     """
     PATH = os.path.join(TEST_PATH, 'montecarlo/')
 
-    def test_get_cluser_energy(self):
+    def _test_get_cluser_energy(self):
         """
         全てのクラスターを作成分解してエネルギーを出す
         """
@@ -94,36 +94,23 @@ class Test(unittest.TestCase):  #pylint: disable=R0903
             # clus_e2 = (tot_e - )
         fcci_xtal.cell[:, :, :, :] = 1
 
+    def _test_mc_bcci2(self):
+        path = os.path.join(self.PATH, "i-s/bcci/TiC_R6N4_330str")
+        CEMParser.from_dirc_bcci(path, BcciOctaSite)
+
     def _test_mc_bcci(self):
         path = os.path.join(self.PATH, "i-s/bcci/TiC_spin_r_R6N4")
         path = os.path.join(self.PATH, "i-s/bcci/TiC_R6N4_330str")
-        clus = CEMParser.parse_logtxt_bcci(os.path.join(path, 'log.txt'))
-        # print(clus[2])
-        # CEMParser.symm_cubic_bcci(clus[0], BcciOctaSite)
-        clusters = []
-        for c in clus:
-            clusters.append(CEMParser.symm_cubic_bcci(c, BcciOctaSite))
-        ecis = CEMParser.parse_ecitxt(os.path.join(path, 'eci.txt'))
-        out = {}
-        for label in ['C', 'A1', 'A2', 'A3']:
-            tmp_clus = []
-            tmp_ecis = []
-            for i in sorted(ecis.keys()):
-                if clusters[i][label]:
-                    tmp_clus.append(
-                        np.array([[BcciOctaSite.conv_site2idex(site)
-                                   for site in cluster]
-                                  for cluster in clusters[i][label]]))
-                    tmp_ecis.append(ecis[i])
-            out.update({label:[tmp_clus, tmp_ecis]})
-
-        CrC = SubLattXtal(5, out, BcciOctaSite, arrange='random', conc=(0.01, 0.01))
-        CrC = SubLattXtal(2, out, BcciOctaSite, arrange='A3C', conc=(0.01, 0.01))
+        CEMParser02.from_dirc_bcci(path, BcciOctaSite)
+        CrC = SubLattXtal.from_pickle_ecis(
+            5, os.path.join(path, 'cluster.pickle'),
+            BcciOctaSite, arrange='random', conc=(0.1, 0.1))
+        # CrC = SubLattXtal(2, out, BcciOctaSite, arrange='A3C', conc=(0.1, 0.1))
 
         CrC.make_poscar(os.path.join(self.PATH, "i-s/bcci/TiC_R6N4_330str/POSCAR_init"), 1, 1)
 
         mc = MonteCarlo(CrC, T=1000)
-        e = mc.loop_bcci_micro_single(10)
+        e = mc.loop_bcci_micro_single(1)
         CrC.make_poscar(os.path.join(self.PATH, "i-s/bcci/TiC_R6N4_330str/POSCAR"), 1, 1)
         print(e)
 
@@ -158,41 +145,71 @@ class Test(unittest.TestCase):  #pylint: disable=R0903
 
     def _test_bcci(self):
         path = os.path.join(self.PATH, "i-s/bcci/CrC")
-        clus = CEMParser.parse_logtxt_bcci(os.path.join(path, 'log.txt'))
-        # print(clus[2])
-        # CEMParser.symm_cubic_bcci(clus[0], BcciOctaSite)
-        clusters = []
-        for c in clus:
-            clusters.append(CEMParser.symm_cubic_bcci(c, BcciOctaSite))
-        ecis = CEMParser.parse_ecitxt(os.path.join(path, 'eci.txt'))
-        out = {}
-        for label in ['C', 'A1', 'A2', 'A3']:
-            tmp_clus = []
-            tmp_ecis = []
-            for i in sorted(ecis.keys()):
-                if clusters[i][label]:
-                    tmp_clus.append(
-                        np.array([[BcciOctaSite.conv_site2idex(site)
-                                   for site in cluster]
-                                  for cluster in clusters[i][label]]))
-                    tmp_ecis.append(ecis[i])
-            out.update({label:[tmp_clus, tmp_ecis]})
+        # clus = CEMParser.parse_logtxt_bcci(os.path.join(path, 'log.txt'))
+        # # print(clus[2])
+        # # CEMParser.symm_cubic_bcci(clus[0], BcciOctaSite)
+        # clusters = []
+        # for c in clus:
+        #     clusters.append(CEMParser.symm_cubic_bcci(c, BcciOctaSite))
+        # ecis = CEMParser.parse_ecitxt(os.path.join(path, 'eci.txt'))
+        # out = {}
+        # for label in ['C', 'A1', 'A2', 'A3']:
+        #     tmp_clus = []
+        #     tmp_ecis = []
+        #     for i in sorted(ecis.keys()):
+        #         if clusters[i][label]:
+        #             tmp_clus.append(
+        #                 np.array([[BcciOctaSite.conv_site2idx(site)
+        #                            for site in cluster]
+        #                           for cluster in clusters[i][label]]))
+        #             tmp_ecis.append(ecis[i])
+        #     out.update({label:[tmp_clus, tmp_ecis]})
         # print(out['C'])
+        # CEMParser02.from_dirc_bcci(path, BcciOctaSite)
+        # CrC = SubLattXtal.from_pickle_ecis(
+        #     5, os.path.join(path, 'cluster.pickle'),
+        #     BcciOctaSite, arrange='random', conc=(0.1, 0.1))
+        pickle = os.path.join(path, 'cluster.pickle')
 
-        print(SubLattXtal(1, out, BcciOctaSite, arrange='A3C').get_energy() - 9614.98293)
-        print(SubLattXtal(1, out, BcciOctaSite, arrange='A2C').get_energy() - 9614.98293)
-        print(SubLattXtal(1, out, BcciOctaSite, arrange='A1C').get_energy() - 9614.98293)
-        print(SubLattXtal(1, out, BcciOctaSite, arrange='BCC_u').get_energy() - 9614.98293)
-        print(SubLattXtal(1, out, BcciOctaSite, arrange='A3D').get_energy() - 9614.98293)
-        print(SubLattXtal(1, out, BcciOctaSite, arrange='A2D').get_energy() - 9614.98293)
+        print("A3C -.678871E+04")
+        print(SubLattXtal.from_pickle_ecis(
+            1, pickle, BcciOctaSite, arrange='A3C').get_energy() - 9614.98293)
 
-        print(SubLattXtal(1, out, BcciOctaSite, arrange='A1D').get_energy() - 9614.98293)
+        print("A2C -.685326E+04")
+        print(SubLattXtal.from_pickle_ecis(
+            1, pickle, BcciOctaSite, arrange='A2C').get_energy() - 9614.98293)
 
-        print(SubLattXtal(1, out, BcciOctaSite, arrange='BCC_d').get_energy() - 9614.98293)
+        print("A1C -.734503E+04")
+        print(SubLattXtal.from_pickle_ecis(
+            1, pickle, BcciOctaSite, arrange='A1C').get_energy() - 9614.98293)
 
-        print(SubLattXtal(4, out, BcciOctaSite, arrange='ACD').get_energy() - 9614.98293)
+        print("BCC_C -.829233E+04")
+        print(SubLattXtal.from_pickle_ecis(
+            1, pickle, BcciOctaSite, arrange='BCC_u').get_energy() - 9614.98293)
 
-        CrC = SubLattXtal(4, out, BcciOctaSite, arrange='BCC_u')
+        print("A3D -.705443E+04")
+        print(SubLattXtal.from_pickle_ecis(
+            1, pickle, BcciOctaSite, arrange='A3D').get_energy() - 9614.98293)
+
+        print("A2D -.723986E+04")
+        print(SubLattXtal.from_pickle_ecis(
+            1, pickle, BcciOctaSite, arrange='A2D').get_energy() - 9614.98293)
+
+        print("A1D -.832914E+04")
+        print(SubLattXtal.from_pickle_ecis(
+            1, pickle, BcciOctaSite, arrange='A1D').get_energy() - 9614.98293)
+
+        print("BCC_D -.961498E+04")
+        print(SubLattXtal.from_pickle_ecis(
+            1, pickle, BcciOctaSite, arrange='BCC_d').get_energy() - 9614.98293)
+
+        # print("ACD")
+        # print(SubLattXtal.from_pickle_ecis(
+        #    4, pickle, BcciOctaSite, arrange='ACD').get_energy() - 9614.98293)
+
+
+        CrC = SubLattXtal.from_pickle_ecis(
+            4, pickle, BcciOctaSite, arrange='BCC_u')
         CrC.cell[0,0,0,2] = 1
         CrC.cell[0,0,0,0] = 0
         crc1 = CrC.get_energy()
@@ -200,6 +217,94 @@ class Test(unittest.TestCase):  #pylint: disable=R0903
         CrC.cell[2,2,2,2] = 1
         crc2 = CrC.get_energy()
         print((crc1 - crc2)*4**3*8)
+
+    def test_exch_de_bcci(self):
+        path = os.path.join(self.PATH, "i-s/bcci/CrC")
+        pickle = os.path.join(path, 'cluster.pickle')
+
+        print("A3C -.678871E+04")
+        print(SubLattXtal.from_pickle_ecis(
+            1, pickle, BcciOctaSite, arrange='A3C').get_energy() - 9614.98293)
+
+        bcci = SubLattXtal.from_pickle_ecis(
+             30, pickle, BcciOctaSite, arrange='random', conc=(0.1,0.1))
+        bcci.cell[0,0,0,7] = 1
+        # print(bcci.get_energy())
+        print(bcci.get_energy())
+        with Benchmarker(width=20, loop=10) as bench:
+            @bench("get_energy")
+            def _(bm): #pylint: disable=W0613,C0111
+                bcci.get_exchange_de(np.array([0,0,0,0]), np.array([0,0,0,0]))
+            @bench("get_energy2")
+            def __(bm): #pylint: disable=W0613,C0111
+                bcci.get_exchange_de2(np.array([0,0,0,0]), np.array([0,0,0,0]))
+
+        return
+        for i in range(10):
+            s_or_i = np.random.choice([0, 1], 1)[0]
+            print(['sub', 'int'][s_or_i])
+
+            s0 = [bcci.cell[:, :, :, 0:2] == 0,
+                  bcci.cell[:, :, :, 2:] == 0][s_or_i]
+            select_s0 = np.random.choice(range((s0).sum()), 1, replace=False)
+            site_s0 = ((np.array(np.where(s0)))[:, select_s0[0]] +
+                       np.array([0,0,0,s_or_i*2]))
+
+            s1 = [bcci.cell[:, :, :, 0:2] == 1,
+                  bcci.cell[:, :, :, 2:] == 1][s_or_i]
+            select_s1 = np.random.choice(range((s1).sum()), 1, replace=False)
+            site_s1 = ((np.array(np.where(s1)))[:, select_s1[0]] +
+                       np.array([0,0,0,s_or_i*2]))
+            de = bcci.get_exchange_de2(site_s0, site_s1)
+            e0 = bcci.get_energy()
+            bcci.cell[tuple(site_s0.T)] = 1
+            bcci.cell[tuple(site_s1.T)] = 0
+            e1 = bcci.get_energy()
+            print((de - (e1-e0)*bcci.size**3*8) ** 2 < 1e-16)
+
+        # bcci = SubLattXtal.from_pickle_ecis           (
+        #     3, pickle, BcciOctaSite, arrange='random')
+        # while bcci.cell[0,0,0,0] != 0 or bcci.cell[0,0,0,1] != 1:
+        #     bcci = SubLattXtal.from_pickle_ecis(
+        #         3, pickle, BcciOctaSite, arrange='random')
+        # print(bcci.cell[0,0,0,0])
+        # print(bcci.cell[0,0,0,1])
+        # e0 = bcci.get_energy()
+        # de = bcci.get_exchange_de2(np.array([0,0,0,0]),
+        #                            np.array([0,0,0,1]))
+        # bcci.cell[0,0,0,0] = 1
+        # bcci.cell[0,0,0,1] = 0
+        # e1 = bcci.get_energy()
+        # print(de)
+        # print((e1-e0)*bcci.size**3*8)
+
+        # while bcci.cell[0,0,0,2] != 0 or bcci.cell[0,0,0,5] != 1:
+        #     bcci = SubLattXtal.from_pickle_ecis(
+        #         3, pickle, BcciOctaSite, arrange='random')
+        # print(bcci.cell[0,0,0,2])
+        # print(bcci.cell[0,0,0,5])
+        # e0 = bcci.get_energy()
+        # de = bcci.get_exchange_de2(np.array([0,0,0,2]),
+        #                            np.array([0,0,0,5]))
+        # bcci.cell[0,0,0,2] = 1
+        # bcci.cell[0,0,0,5] = 0
+        # e1 = bcci.get_energy()
+        # print(de)
+        # print((e1-e0)*bcci.size**3*8)
+
+        # while bcci.cell[0,0,0,2] != 0 or bcci.cell[0,0,0,3] != 1:
+        #     bcci = SubLattXtal.from_pickle_ecis(
+        #         3, pickle, BcciOctaSite, arrange='random')
+        # print(bcci.cell[0,0,0,2])
+        # print(bcci.cell[0,0,0,3])
+        # e0 = bcci.get_energy()
+        # de = bcci.get_exchange_de2(np.array([0,0,0,2]),
+        #                            np.array([0,0,0,3]))
+        # bcci.cell[0,0,0,2] = 1
+        # bcci.cell[0,0,0,3] = 0
+        # e1 = bcci.get_energy()
+        # print(de)
+        # print((e1-e0)*bcci.size**3*8)
 
     def _test_bcci2(self):
         path = os.path.join(self.PATH, "i-s/bcci/CrC_spin_r")
@@ -388,12 +493,6 @@ class Test(unittest.TestCase):  #pylint: disable=R0903
         nacl.make_poscar(os.path.join(self.PATH, "i-s/fcci/Ti1C1/POSCAR_test"), 0, 1, True)
         print()
 
-    def _test_flip_de_i_s(self):
-        """
-        i-s 系での flip によるエネルギー差を check
-        """
-        pass
-
     def _test_mc_micro_nacl(self):
         """
         i-s 系での mc 計算のてすと
@@ -451,11 +550,11 @@ class Test(unittest.TestCase):  #pylint: disable=R0903
         CEMParser.from_dirc_std(path, QuadSite)
         path = os.path.join(self.PATH, "AlCu/tetra_2R2N")
         CEMParser.from_dirc_prim_fcc(path, QuadSite)
-        path = os.path.join(self.PATH, "i-s/fcci/Ti0C1")
+        path = os.path.join(self.PATH, "i-s/fcci/Ti0C1/R4N4")
         CEMParser.from_dirc_2sub(path, NaClSite)
         # path = os.path.join(self.PATH, "i-s/bcci/CrC")
         # CEMParser.from_dirc_2sub(path, NaClSite)
-        path = os.path.join(self.PATH, "i-s/bcci/TiC_R6N4_330_str")
+        path = os.path.join(self.PATH, "i-s/bcci/TiC_R6N4_330str")
         CEMParser.from_dirc_2sub(path, NaClSite)
 
     def _test_get_entropy_TO(self):
@@ -468,46 +567,47 @@ class Test(unittest.TestCase):  #pylint: disable=R0903
         mc = MonteCarlo(fcc, T=10000)
         mc.loop_fcc_micro_single(2000)
 
-    def _test_flip_de(self):
+    def _test_flip_de_fcc(self):
         """
         flip de を total energy の変化量と比較
         一致すれば O.K.
-        cell size が 2 以上ならうまくいく
+        cell size が 3 以上ならうまくいく
         それより小さい場合は direct にエネルギーを求めた方が良い
         """
         path = os.path.join(self.PATH, "AlCu/voldep/4.0/")
-        path = os.path.join(self.PATH, "AlCu/wien/TO/")
+        # path = os.path.join(self.PATH, "AlCu/wien/TO/")
         fcc = FCCXtal.from_pickle_ecis(os.path.join(path, 'cluster.pickle'),
-                                       arrange='random', conc=0.8, size=4)
+                                       arrange='random', conc=0.8, size=3)
+        for _ in range(10):
+            # s=0, s=1 のサイトを無作為に抽出
+            print("random flip")
+            s0 = fcc.cell == 0
+            select_s0 = np.random.choice(range((s0).sum()), 1, replace=False)
+            site_s0 = (np.array(np.where(s0)))[:, select_s0[0]]
 
-        # s=0, s=1 のサイトを無作為に抽出
-        s0 = fcc.cell == 0
-        select_s0 = np.random.choice(range((s0).sum()), 1, replace=False)
-        site_s0 = (np.array(np.where(s0)))[:, select_s0[0]]
+            s1 = fcc.cell == 1
+            select_s1 = np.random.choice(
+                range((s1).sum()), 1, replace=False)
+            site_s1 = (np.array(np.where(s1)))[:, select_s1[0]]
 
-        s1 = fcc.cell == 1
-        select_s1 = np.random.choice(
-            range((s1).sum()), 1, replace=False)
-        site_s1 = (np.array(np.where(s1)))[:, select_s1[0]]
+            print("before energy")
+            before = fcc.get_energy()
+            print(before)
+            pred_de = fcc.get_exchange_de_small(site_s0, site_s1)/fcc.size**3/4
+            pred_de = fcc.get_exchange_de(site_s0, site_s1)/fcc.size**3/4
+            fcc.cell[tuple(site_s0.T)] = 1
+            fcc.cell[tuple(site_s1.T)] = 0
+            after = fcc.get_energy()
+            print("after energy")
+            print(after)
+            print("de")
+            de = after - before
+            print(de)
+            print("Predict de")
+            print(pred_de)
+            assert (de - pred_de) ** 2 < 1e-6
 
-        print("before energy")
-        before = fcc.get_energy()
-        print(before)
-        pred_de = fcc.get_exchange_de_small(site_s0, site_s1)/fcc.size**3/4
-        pred_de = fcc.get_exchange_de(site_s0, site_s1)/fcc.size**3/4
-        fcc.cell[tuple(site_s0.T)] = 1
-        fcc.cell[tuple(site_s1.T)] = 0
-        after = fcc.get_energy()
-        print("after energy")
-        print(after)
-        print("de")
-        de = after - before
-        print(de)
-        print("Predict de")
-        print(pred_de)
-        assert (de - pred_de) ** 2 < 1e-6
-
-    def test_mc_fcc_micoro_single(self):
+    def _test_mc_fcc_micoro_single(self):
         """
         loop_fcc_mciro_single の テスト
         benchmarker で速度計測

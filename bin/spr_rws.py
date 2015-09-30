@@ -1,6 +1,11 @@
 #!/opt/anaconda/bin/python
 # -*- coding: utf-8 -*-
-"""sprkkr の rws を修正する"""
+"""
+sprkkr の rws を修正する
+空間群を考慮していないのでユニットセル中のサイト数が実際と違う場合がある
+その場合は corr_site を使って補正する
+補正が必要ない場合は --site は使わない
+"""
 import argparse
 import glob
 from sprkkr import Pot

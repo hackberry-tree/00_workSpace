@@ -22,9 +22,10 @@ class Dos(unittest.TestCase): #pylint: disable=R0904
     """DOSCAR用"""
     path = os.path.join(TEST_PATH, 'band')
 
-    def dos(self):
+    def test_dos(self):
         """dosを読む"""
         path = os.path.join(self.path, 'data')
+        # path = os.path.join("/Users/enoki/Desktop")
         dos = collect_vasp.Doscar(os.path.join(path, 'DOSCAR_polarized'))
         dos.get_data()
         print(dos)
@@ -138,7 +139,8 @@ class Procar(unittest.TestCase): #pylint: disable=R0904
         ax1.scatter(band_100['kpoint_id'], band_100['energy'], s=mark_size,
                     c='y', linewidths=0)
 
-        ax1.set_ylim(-1, 1)
+        # ax1.set_ylim(-1, 1)
+        ax1.set_ylim(-20, -15)
         pylab.xticks(kp_label[0], kp_label[1])
         pylab.show()
 
